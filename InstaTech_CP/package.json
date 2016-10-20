@@ -1,0 +1,50 @@
+{
+  "name": "instatechcp",
+  "productName": "InstaTech CP",
+  "version": "0.9.10",
+  "description": "InstaTech Cross-Platform Client",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Translucency",
+    "email": "jared@translucency.info",
+    "url": "https://translucency.info"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jay-Rad/InstaTech_Client.git"
+  },
+  "homepage": "https://instatech.org",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager ./ InstaTech_CP --platform=linux --arch=x64 --out=dist --asar --prune",
+    "rebuild": "npm rebuild --runtime=electron --target=1.4.4 --arch=x64 --disturl=https://atom.io/download/atom-shell --abi=50",
+    "postinstall": "install-app-deps"
+  },
+  "files": [
+    "main.js",
+    "index.js",
+    "index.html",
+    "index.css",
+    "worker.html",
+    "worker.js"
+  ],
+  "keywords": [
+    "electron-app",
+    "electron"
+  ],
+  "devDependencies": {
+    "devtron": "^1.1.0",
+    "electron": "^1.4.3",
+    "electron-debug": "^1.0.0",
+    "electron-packager": "^8.1.0"
+  },
+  
+  "build": {
+    "appId": "InstaTech CP",
+    "category": "Utility",
+    "win": {
+      "iconUrl": "https://instatech.org/Assets/Images/InstaTech Logo.ico"
+    }
+  }
+}
