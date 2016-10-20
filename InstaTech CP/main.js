@@ -32,6 +32,9 @@ function createMainWindow() {
     win.on('ready-to-show', function () {
         win.show();
     });
+	return win;
+}
+function checkForUpdates() {
     // Check for updates.
     https.get({
         hostname: 'instatech.org',
@@ -58,11 +61,12 @@ function createMainWindow() {
             }
         });
     });
+}
+function cleanupTempFiles() {
     // Remove previous session's temp files (if any).
     if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
         deleteFolderRecursive(os.tmpdir() + "\\InstaTech\\");
     };
-	return win;
 }
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') {
@@ -77,6 +81,8 @@ app.on('activate', () => {
 });
 
 app.on('ready', () => {
+    checkForUpdates();
+    cleanupTempFiles();
     mainWindow = createMainWindow();
     workerWindow = new electron.BrowserWindow({
         show: false,

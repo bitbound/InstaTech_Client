@@ -36,6 +36,7 @@
     <Content Include="Assets\InstaTech Logo.png" />
     <Content Include="Assets\ITCBackground.png" />
     <Content Include="Assets\T %28About%29.png" />
+    <Content Include="build\icon.icns" />
     <Content Include="build\icon.ico" />
     <Content Include="build\icons\128x128.png" />
     <Content Include="build\icons\16x16.png" />
@@ -1174,7 +1175,7 @@
     <Compile Include="node_modules\electron-packager\node_modules\asar\node_modules\mksnapshot\node_modules\request\node_modules\combined-stream\node_modules\delayed-stream\test\run.js" />
     <Compile Include="node_modules\electron-packager\node_modules\asar\node_modules\mksnapshot\node_modules\request\request.js" />
     <Compile Include="node_modules\electron-packager\win32.js" />
-    <None Include="Scripts\_references.js" />
+    <Compile Include="Scripts\_references.js" />
     <Compile Include="Scripts\adapter.js" />
     <Compile Include="Scripts\jquery-3.1.0.js" />
     <Compile Include="Scripts\jquery-3.1.0.min.js" />
