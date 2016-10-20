@@ -1,0 +1,48 @@
+﻿<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>InstaTech Client</title>
+		<link rel="stylesheet" href="index.css" />
+        <link rel="icon" href="Assets/InstaTech Logo.png" />
+        <script src="Scripts/jquery-3.1.0.js"></script>
+        <script>
+            $ = jQuery = module.exports;
+        </script>
+        <script src="Scripts/adapter.js"></script>
+	</head>
+	<body>
+        <div class="background">
+        </div>
+        <div class="container">
+            <img id="imgMenu" onclick="toggleMenu()" />
+            <div id="divMenu">
+                <div onclick="openAbout()">About</div>
+            </div>
+            <section id="sectionMain" class="main">
+                <div class="title">
+                    InstaTech
+                </div>
+                <div>
+                    <label>Session ID:</label>
+                    <input id="inputSessionID" type="text" placeholder="Retrieving ID..." readonly onfocus="this.select()" onclick="copySessionID()" style="font-weight:bold" />
+                </div>
+                <div>
+                    <label>Agent Status:</label>
+                    <input id="inputAgentStatus" type="text" readonly value="Not Connected" onclick="disconnectAgent()" />
+                </div>
+                <div>
+                    <label>Files Transferred:</label>
+                    <input id="inputFilesTransferred" type="text" readonly value="0" onclick="openTransferredFiles()" />
+                </div>
+            </section>
+            <section hidden id="sectionNewSession" style="text-align:center; position:relative; top:50px">
+                <div style="margin-bottom:15px; font-weight:bold;">Your session has ended.</div>
+                <button style="height:40px; width:100px" onclick="reconnect()">New Session</button>
+            </section>
+            <footer></footer>
+        </div>
+        <script src="index.js"></script>
+        <video id="videoScreen" hidden style="width:100%"></video>
+	</body>
+</html>
