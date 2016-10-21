@@ -2,8 +2,8 @@
 
 A screen sharing client (WPF and cross-platform) intended use in remote tech support.
 
-### WPF Client
+### WPF Client (/InstaTech Client/)
 `// TODO.`
 
-### Cross-Platform (Electron) Client.
+### Cross-Platform Client (/InstaTech CP/)
 `// TODO.`
