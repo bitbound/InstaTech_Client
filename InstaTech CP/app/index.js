@@ -1,4 +1,7 @@
-﻿///<reference path="typings/index.d.ts" />
+﻿///<reference path="../typings/index.d.ts" />
+// Check to localhost for debugging.
+var hostname = "wss://instatech.org";
+
 window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
     fs.appendFile("./ErrorLog.txt", message + "\r\n");
@@ -31,20 +34,7 @@ var offsetX = 0;
 var offsetY = 0;
 
 function openWebSocket() {
-    if (win.isMenuBarVisible()) {
-        socket = new WebSocket("ws://localhost:4668/Sockets/ScreenViewer.cshtml");
-        win.setBounds({
-            x: 50,
-            y: 50,
-            width: 1200,
-            height: 600
-        });
-        win.webContents.toggleDevTools();
-    }
-    else {
-        socket = new WebSocket("wss://instatech.org/Sockets/ScreenViewer.cshtml");
-    }
-
+    socket = new WebSocket(hostname + "/Sockets/ScreenViewer.cshtml");
     socket.onopen = function (e) {
         var request = {
             "Type": "ConnectionType",
@@ -131,12 +121,7 @@ function openWebSocket() {
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
                     fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
                 };
-                var strPath;
-                if (win.isMenuBarVisible()) {
-                    strPath = "http://localhost:4668/Services/FileTransfer.cshtml";
-                } else {
-                    strPath = "https://instatech.org/Services/FileTransfer.cshtml";
-                }
+                var strPath = hostname + "/Services/FileTransfer.cshtml";
                 var retrievalCode = jsonMessage.RetrievalCode;
                 var request = {
                     "Type": "Download",
@@ -441,7 +426,7 @@ function openAbout() {
         icon: `file://${__dirname}/Assets/InstaTech Logo.ico`
     })
     about.setMenuBarVisibility(false);
-    about.loadURL(`file://${__dirname} + /about.html`);
+    about.loadURL(`file://${__dirname}/about.html`);
     about.on('ready-to-show', function () {
         about.show();
     });

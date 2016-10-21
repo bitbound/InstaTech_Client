@@ -31,11 +31,33 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="app\about.html" />
+    <Content Include="app\Assets\HamburgerMenu_16x.png" />
+    <Content Include="app\Assets\InstaTech Logo.ico" />
+    <Content Include="app\Assets\InstaTech Logo.png" />
+    <Content Include="app\Assets\ITCBackground.png" />
+    <Content Include="app\Assets\T %28About%29.png" />
+    <Content Include="app\build\config.gypi" />
+    <Content Include="app\build\icon.icns" />
+    <Content Include="app\build\icon.ico" />
+    <Content Include="app\build\icons\128x128.png" />
+    <Content Include="app\build\icons\16x16.png" />
+    <Content Include="app\build\icons\24x24.png" />
+    <Content Include="app\build\icons\256x256.png" />
+    <Content Include="app\build\icons\32x32.png" />
+    <Content Include="app\build\icons\48x48.png" />
+    <Content Include="app\build\icons\64x64.png" />
+    <Content Include="app\build\icons\96x96.png" />
+    <Content Include="app\index.css" />
+    <Content Include="app\index.html" />
+    <Content Include="app\package.json" />
+    <Content Include="app\worker.html" />
     <Content Include="Assets\HamburgerMenu_16x.png" />
     <Content Include="Assets\InstaTech Logo.ico" />
     <Content Include="Assets\InstaTech Logo.png" />
     <Content Include="Assets\ITCBackground.png" />
     <Content Include="Assets\T %28About%29.png" />
+    <Content Include="build\config.gypi" />
     <Content Include="build\icon.icns" />
     <Content Include="build\icon.ico" />
     <Content Include="build\icons\128x128.png" />
@@ -46,9 +68,9 @@
     <Content Include="build\icons\48x48.png" />
     <Content Include="build\icons\64x64.png" />
     <Content Include="build\icons\96x96.png" />
-    <Content Include="index.css" />
-    <Content Include="index.html" />
+    <Content Include="Init" />
     <Content Include="jsconfig.json" />
+    <Content Include="License.txt" />
     <Content Include="node_modules\.bin\electron" />
     <Content Include="node_modules\.bin\electron-packager" />
     <Content Include="node_modules\.bin\electron-packager.cmd" />
@@ -474,9 +496,13 @@
     <Content Include="package.json" />
     <Content Include="README.md" />
     <Content Include="typings.json" />
-    <Content Include="worker.html" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="app\" />
+    <Folder Include="app\Assets\" />
+    <Folder Include="app\build\" />
+    <Folder Include="app\build\icons\" />
+    <Folder Include="app\Scripts\" />
     <Folder Include="Assets\" />
     <Folder Include="build\" />
     <Folder Include="build\icons\" />
@@ -682,8 +708,13 @@
     <TypeScriptCompile Include="typings\index.d.ts" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="index.js" />
-    <Compile Include="main.js" />
+    <None Include="app\Scripts\_references.js" />
+    <Compile Include="app\index.js" />
+    <Compile Include="app\main.js" />
+    <Compile Include="app\Scripts\adapter.js" />
+    <Compile Include="app\Scripts\jquery-3.1.0.js" />
+    <Compile Include="app\Scripts\jquery-3.1.0.min.js" />
+    <Compile Include="app\worker.js" />
     <Compile Include="node_modules\devtron\api.js" />
     <Compile Include="node_modules\devtron\node_modules\highlight.js\lib\highlight.js" />
     <Compile Include="node_modules\devtron\node_modules\highlight.js\lib\index.js" />
@@ -1179,7 +1210,6 @@
     <Compile Include="Scripts\adapter.js" />
     <Compile Include="Scripts\jquery-3.1.0.js" />
     <Compile Include="Scripts\jquery-3.1.0.min.js" />
-    <Compile Include="worker.js" />
   </ItemGroup>
   <!-- Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them. -->
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="False" />

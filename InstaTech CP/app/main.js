@@ -3,7 +3,7 @@ const electron = require('electron');
 // To avoid update running twice.
 if (require('electron-squirrel-startup')) return;
 
-// Set to false to disable menu bar and target production server.
+// Set to true to enable dev tools for debugging. (Note: Server target is in index.js)
 var debug = false;
 
 ///<reference path="typings/index.d.ts" />
@@ -11,8 +11,6 @@ const app = electron.app;
 const os = require("os");
 const fs = require("fs");
 const https = require("https");
-// adds debug features like hotkeys for triggering dev tools and reload
-require('electron-debug')();
 
 // prevent window being garbage collected
 let mainWindow;
@@ -29,11 +27,23 @@ function createMainWindow() {
     win.setMenuBarVisibility(debug);
     win.setResizable(debug);
     win.setMaximizable(debug);
+    if (debug) {
+        win.setBounds({
+            x: 50,
+            y: 50,
+            width: 1200,
+            height: 600
+        });
+        win.webContents.openDevTools();
+    }
     win.loadURL(`file://${__dirname}/index.html`);
     win.on('closed', function () { app.quit() });
     win.on('ready-to-show', function () {
         win.show();
     });
+	return win;
+}
+function checkForUpdates() {
     // Check for updates.
     https.get({
         hostname: 'instatech.org',
@@ -60,11 +70,13 @@ function createMainWindow() {
             }
         });
     });
+}
+
+function cleanupTempFiles() {
     // Remove previous session's temp files (if any).
     if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
         deleteFolderRecursive(os.tmpdir() + "\\InstaTech\\");
     };
-	return win;
 }
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') {
@@ -86,4 +98,6 @@ app.on('ready', () => {
         title: "InstaTech Worker",
     });
     workerWindow.loadURL(`file://${__dirname}/worker.html`);
+    checkForUpdates();
+    cleanupTempFiles();
 });
