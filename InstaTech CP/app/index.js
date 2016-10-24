@@ -1,5 +1,5 @@
 ﻿///<reference path="../typings/index.d.ts" />
-// Check to localhost for debugging.
+// Change to localhost for debugging.
 var hostname = "wss://instatech.org";
 
 window.onerror = function (message, source, lineno, colno, error) {
