@@ -17,8 +17,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager ./ InstaTech_CP --platform=linux --arch=x64 --out=dist --asar --prune",
-    "rebuild": "npm rebuild --runtime=electron --target=1.4.4 --arch=x64 --disturl=https://atom.io/download/atom-shell --abi=50",
+    "build": "build --win --x64",
+    "rebuild": "npm rebuild --runtime=electron --target=1.4.5 --arch=x64 --disturl=https://atom.io/download/atom-shell --abi=48",
     "postinstall": "install-app-deps"
   },
   "files": [
