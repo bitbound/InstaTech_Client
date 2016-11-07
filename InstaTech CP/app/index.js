@@ -4,7 +4,8 @@ var hostname = "wss://instatech.org";
 
 window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
-    fs.appendFile("./ErrorLog.txt", message + "\r\n");
+    var os = require("os");
+    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Errors.txt", new Date().toString() + "\t" +  message + "\r\n");
     // This is required to ignore random Electron renderer error.
     if (capturing && useWebSocket) {
         worker.webContents.executeJavaScript("getCapture()");
@@ -32,7 +33,7 @@ var useWebSocket = false;
 // be converted to a 0-based max left/top to render images on the canvas properly.
 var offsetX = 0;
 var offsetY = 0;
-
+throw "Test";
 function openWebSocket() {
     socket = new WebSocket(hostname + "/Sockets/ScreenViewer.cshtml");
     socket.onopen = function (e) {

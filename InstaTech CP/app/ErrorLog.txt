@@ -2,3 +2,15 @@ Uncaught Error: Cannot find module 'robotjs'
 Uncaught Error: A dynamic link library (DLL) initialization routine failed.
 \\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
 Uncaught Error: Cannot find module './build/Release/robotjs.node'
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node
+Uncaught Error: %1 is not a valid Win32 application.
+\\?\C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech CP\app\node_modules\robotjs\build\Release\robotjs.node

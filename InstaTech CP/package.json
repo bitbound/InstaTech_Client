@@ -16,9 +16,9 @@
   "homepage": "https://instatech.org",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "build --win --x64",
-    "rebuild": "npm rebuild --runtime=electron --target=1.4.5 --arch=x64 --disturl=https://atom.io/download/atom-shell --abi=48",
+    "start": "electron ./app",
+    "build": "build --win --ia32",
+    "rebuild": "npm rebuild --runtime=electron --target=1.4.5 --arch=ia32 --disturl=https://atom.io/download/atom-shell --abi=48",
     "postinstall": "install-app-deps"
   },
   "files": [

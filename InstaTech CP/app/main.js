@@ -4,7 +4,7 @@ const electron = require('electron');
 if (require('electron-squirrel-startup')) return;
 
 // Set to true to enable dev tools for debugging. (Note: Server target is in index.js)
-var debug = true;
+var debug = false;
 
 ///<reference path="typings/index.d.ts" />
 const app = electron.app;
