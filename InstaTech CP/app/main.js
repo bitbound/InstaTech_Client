@@ -71,7 +71,19 @@ function checkForUpdates() {
         });
     });
 }
-
+function deleteFolderRecursive(path) {
+    if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file, index) {
+            var curPath = path + "/" + file;
+            if (fs.lstatSync(curPath).isDirectory()) {
+                deleteFolderRecursive(curPath);
+            } else {
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
+};
 function cleanupTempFiles() {
     // Remove previous session's temp files (if any).
     if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
