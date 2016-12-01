@@ -37,7 +37,7 @@ if (electron.remote.getGlobal("debug")) {
 } else {
     wsProtocol = "wss://";
     httpProtocol = "https://";
-    vhostname = "instatech.org";
+    hostname = "instatech.org";
 }
 // Offsets are the left and top edge of the screen, in case multiple monitor setups
 // create a situation where the edge of a monitor is in the negative.  This must
