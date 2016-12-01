@@ -33,7 +33,6 @@ var useWebSocket = false;
 // be converted to a 0-based max left/top to render images on the canvas properly.
 var offsetX = 0;
 var offsetY = 0;
-throw "Test";
 function openWebSocket() {
     socket = new WebSocket(hostname + "/Sockets/ScreenViewer.cshtml");
     socket.onopen = function (e) {
@@ -46,7 +45,7 @@ function openWebSocket() {
     };
     socket.onclose = function (e) {
         capturing = false;
-        if (rtcConnection) {
+        if (rtcConnection.signalingState == "stable") {
             rtcConnection.close();
         }
         $("#inputAgentStatus").val("Not Connected");
@@ -56,7 +55,7 @@ function openWebSocket() {
     };
     socket.onerror = function (e) {
         capturing = false;
-        if (rtcConnection) {
+        if (rtcConnection.signalingState == "stable") {
             rtcConnection.close();
         }
         $("#sectionMain").hide();
@@ -213,10 +212,16 @@ function openWebSocket() {
             case "PartnerClose":
                 capturing = false;
                 rtcConnection.close();
+                if (socket) {
+                    socket.close();
+                }
                 break;
             case "PartnerError":
                 capturing = false;
                 rtcConnection.close();
+                if (socket) {
+                    socket.close();
+                }
                 break;
             default:
                 break;
@@ -430,8 +435,10 @@ function openAbout() {
     about.loadURL(`file://${__dirname}/about.html`);
     about.on('ready-to-show', function () {
         about.show();
+        toggleMenu();
     });
-}
+};
+
 electron.ipcRenderer.on("screen-capture", function (event, capture) {
     if (!capturing) {
         return;
