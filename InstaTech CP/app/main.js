@@ -3,8 +3,8 @@ const electron = require('electron');
 // To avoid update running twice.
 if (require('electron-squirrel-startup')) return;
 
-// Set to true to enable dev tools for debugging. (Note: Server target is in index.js)
-var debug = true;
+// Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this)
+global.debug = false;
 
 ///<reference path="typings/index.d.ts" />
 const app = electron.app;
@@ -24,10 +24,10 @@ function createMainWindow() {
         title: "InstaTech",
         icon: `file://${__dirname}/Assets/InstaTech Logo.ico`
     });
-    win.setMenuBarVisibility(debug);
-    win.setResizable(debug);
-    win.setMaximizable(debug);
-    if (debug) {
+    win.setMenuBarVisibility(global.debug);
+    win.setResizable(global.debug);
+    win.setMaximizable(global.debug);
+    if (global.debug) {
         win.setBounds({
             x: 50,
             y: 50,

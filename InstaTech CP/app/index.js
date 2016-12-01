@@ -1,6 +1,4 @@
 ﻿///<reference path="../typings/index.d.ts" />
-// Change to localhost for debugging.
-var hostname = "wss://instatech.org";
 
 window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
@@ -28,13 +26,26 @@ var totalHeight = 0;
 var lastMouseMove;
 var videoQuality = .75;
 var useWebSocket = false;
+// Changes target server and protocol based on global.debug in main.js.
+var wsProtocol;
+var httpProtocol;
+var hostname;
+if (electron.remote.getGlobal("debug")) {
+    wsProtocol = "ws://";
+    httpProtocol = "http://";
+    hostname = "localhost:4668";
+} else {
+    wsProtocol = "wss://";
+    httpProtocol = "https://";
+    vhostname = "instatech.org";
+}
 // Offsets are the left and top edge of the screen, in case multiple monitor setups
 // create a situation where the edge of a monitor is in the negative.  This must
 // be converted to a 0-based max left/top to render images on the canvas properly.
 var offsetX = 0;
 var offsetY = 0;
 function openWebSocket() {
-    socket = new WebSocket(hostname + "/Sockets/ScreenViewer.cshtml");
+    socket = new WebSocket(wsProtocol + hostname + "/Sockets/ScreenViewer.cshtml");
     socket.onopen = function (e) {
         var request = {
             "Type": "ConnectionType",
@@ -121,7 +132,7 @@ function openWebSocket() {
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
                     fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
                 };
-                var strPath = hostname + "/Services/FileTransfer.cshtml";
+                var strPath = httpProtocol + hostname + "/Services/FileTransfer.cshtml";
                 var retrievalCode = jsonMessage.RetrievalCode;
                 var request = {
                     "Type": "Download",
