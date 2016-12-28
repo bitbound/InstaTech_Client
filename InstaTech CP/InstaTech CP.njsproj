@@ -53,7 +53,6 @@
     <Content Include="app\package.json" />
     <Content Include="app\worker.html" />
     <Content Include="Assets\HamburgerMenu_16x.png" />
-    <Content Include="Assets\icons\16x16.png" />
     <Content Include="Assets\icons\24x24.png" />
     <Content Include="Assets\icons\256x256.png" />
     <Content Include="Assets\icons\32x32.png" />
@@ -88,7 +87,6 @@
     <Folder Include="app\build\icons\" />
     <Folder Include="app\Scripts\" />
     <Folder Include="Assets\" />
-    <Folder Include="Assets\icons\" />
     <Folder Include="build\" />
     <Folder Include="build\icons\" />
     <Folder Include="Scripts\" />

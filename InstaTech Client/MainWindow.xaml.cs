@@ -34,11 +34,22 @@ namespace InstaTech_Client
     public partial class MainWindow : Window
     {
         public static MainWindow Current { get; set; }
+
+        // ***  Config: Change these variables for your environment.  *** //
+        string downloadURI = "https://instatech.org/Downloads/InstaTech Client.exe";
+        string versionURI = "https://instatech.org/Services/GetWinClientVersion.cshtml";
 #if DEBUG
-        string socketPath = "ws://localhost:4668/Sockets/ScreenViewer.cshtml";
+        string socketPath = "ws://localhost:52422/Services/Remote_Control_Socket.cshtml";
 #else
-        string socketPath = "wss://instatech.org/Sockets/ScreenViewer.cshtml";
+        string socketPath = "wss://instatech.org/Demo/Services/Remote_Control_Socket.cshtml";
 #endif
+#if DEBUG
+        string fileTransferURI = "http://localhost:52422/Services/FileTransfer.cshtml";
+#else
+        string fileTransferURI = "https://instatech.org/Demo/Services/FileTransfer.cshtml";
+#endif
+
+        // ***  Variables  *** //
         ClientWebSocket socket { get; set; }
         HttpClient httpClient = new HttpClient();
         Bitmap screenshot { get; set; }
@@ -68,10 +79,11 @@ namespace InstaTech_Client
         {
             InitializeComponent();
             Current = this;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            App.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
             AppDomain.CurrentDomain.ProcessExit += (sen, arg) => { setUACAdminPromptValue(uacAdminPromptValue ?? 5); };
             checkArgs(Environment.GetCommandLineArgs());
         }
+
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -114,38 +126,39 @@ namespace InstaTech_Client
             }
             await checkForUpdates(true);
         }
-
-        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            e.Handled = true;
             setUACAdminPromptValue(uacAdminPromptValue ?? 5);
-            writeToErrorLog(e.ExceptionObject as Exception);
-            var result = System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  Can we submit this error to the developer?  No personal information will be sent.", "Application Error", MessageBoxButton.YesNo, MessageBoxImage.Error);
-            if (result == MessageBoxResult.Yes)
-            {
-                var httpClient = new HttpClient();
-                var content = new MultipartFormDataContent();
-                content.Add(new StringContent("InstaTech Client"), "app");
-                content.Add(new StringContent("InstaTech User"), "name");
-                content.Add(new StringContent("InstaTech User"), "from");
-                content.Add(new StringContent("DoNotReply@translucency.info"), "email");
-                var errors = WebUtility.HtmlEncode(File.ReadAllText(System.IO.Path.GetTempPath() + "InstaTech_Client_Errors.txt"));
-                content.Add(new StringContent(errors), "message");
-                var httpResponse = httpClient.PostAsync("https://translucency.info/Services/SendEmail.cshtml", content);
-                httpResponse.Wait();
-                if (httpResponse.Result.IsSuccessStatusCode)
-                {
-                    System.Windows.MessageBox.Show("Thank you for helping me improve this app!", "Upload Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    System.Windows.MessageBox.Show("The file upload failed.  Please send me an email if it persists.", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            else
-            {
-                System.Windows.MessageBox.Show("Okay.  No information will be sent.", "Upload Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            Close();
+            writeToErrorLog(e.Exception);
+            System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  If the issue persists, please contact the developer.", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            // *** Example of additional error handling. *** //
+            //var result = System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  Can we submit this error to the developer?  No personal information will be sent.", "Application Error", MessageBoxButton.YesNo, MessageBoxImage.Error);
+            //if (result == MessageBoxResult.Yes)
+            //{
+            //    var httpClient = new HttpClient();
+            //    var content = new MultipartFormDataContent();
+            //    content.Add(new StringContent("InstaTech Client"), "app");
+            //    content.Add(new StringContent("InstaTech User"), "name");
+            //    content.Add(new StringContent("InstaTech User"), "from");
+            //    content.Add(new StringContent("DoNotReply@translucency.info"), "email");
+            //    var errors = WebUtility.HtmlEncode(File.ReadAllText(System.IO.Path.GetTempPath() + "InstaTech_Client_Errors.txt"));
+            //    content.Add(new StringContent(errors), "message");
+            //    var httpResponse = httpClient.PostAsync("https://translucency.info/Services/SendEmail.cshtml", content);
+            //    httpResponse.Wait();
+            //    if (httpResponse.Result.IsSuccessStatusCode)
+            //    {
+            //        System.Windows.MessageBox.Show("Thank you for helping me improve this app!", "Upload Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            //    }
+            //    else
+            //    {
+            //        System.Windows.MessageBox.Show("The file upload failed.  Please send me an email if it persists.", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Information);
+            //    }
+            //}
+            //else
+            //{
+            //    System.Windows.MessageBox.Show("Okay.  No information will be sent.", "Upload Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+            //}
         }
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -346,18 +359,14 @@ namespace InstaTech_Client
                                 sendFullScreenshot = true;
                                 break;
                             case "FileTransfer":
-#if DEBUG
-                                var strPath = "http://localhost:4668/Services/FileTransfer.cshtml";
-#else
-                                var strPath = "https://instatech.org/Services/FileTransfer.cshtml";
-#endif
+
                                 var retrievalCode = jsonMessage.RetrievalCode.ToString();
                                 var httpRequest = new
                                 {
                                     Type = "Download",
                                     RetrievalCode = retrievalCode,
                                 };
-                                var httpResult = await httpClient.PostAsync(strPath, new StringContent(JsonConvert.SerializeObject(httpRequest)));
+                                var httpResult = await httpClient.PostAsync(fileTransferURI, new StringContent(JsonConvert.SerializeObject(httpRequest)));
                                 var strResult = await httpResult.Content.ReadAsStringAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
                                 var byteFileData = Convert.FromBase64String(strResult);
@@ -683,7 +692,7 @@ namespace InstaTech_Client
         {
             WebClient webClient = new WebClient();
             HttpClient httpClient = new HttpClient();
-            var strFilePath = System.IO.Path.GetTempPath() + @"\InstaTech Client.exe";
+            var strFilePath = System.IO.Path.GetTempPath() + System.IO.Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HttpResponseMessage response;
             if (File.Exists(strFilePath))
             {
@@ -691,7 +700,7 @@ namespace InstaTech_Client
             }
             try
             {
-                response = await httpClient.GetAsync("https://instatech.org/Services/GetWinClientVersion.cshtml");
+                response = await httpClient.GetAsync(versionURI);
             }
             catch
             {
@@ -709,7 +718,7 @@ namespace InstaTech_Client
                 var result = System.Windows.MessageBox.Show("A new version of InstaTech is available!  Would you like to download it now?  It's an instant and effortless process.", "New Version Available", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
                 {
-                    await webClient.DownloadFileTaskAsync(new Uri("https://instatech.org/Downloads/InstaTech Client.exe"), strFilePath);
+                    await webClient.DownloadFileTaskAsync(new Uri(downloadURI), strFilePath);
                     Process.Start(strFilePath, "\"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\"");
                     App.Current.Shutdown();
                     return;

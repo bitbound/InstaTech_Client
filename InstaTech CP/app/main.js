@@ -1,18 +1,23 @@
+// ***  Config: Change these variables for your environment.  *** //
+
+// A service URL that will respond to a GET request with the current version.
+var versionURL = "https://instatech.org/Services/GetCPClientVersion.cshtml";
+// The URLs of the application's current version per OS.
+var downloadURLWindows = "https://instatech.org/Downloads/InstaTech_CP.exe";
+var downloadURLMac = "";
+var downloadURLLinux = "https://instatech.org/Downloads/InstaTech_CP.AppImage";
+
 const electron = require('electron');
 
-// To avoid update running twice.
-if (require('electron-squirrel-startup')) return;
-
-// Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this)
+// Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this.)
 global.debug = false;
 
-///<reference path="typings/index.d.ts" />
 const app = electron.app;
 const os = require("os");
 const fs = require("fs");
 const https = require("https");
 
-// prevent window being garbage collected
+// Prevent window from being garbage collected.
 let mainWindow;
 let workerWindow;
 
@@ -45,26 +50,45 @@ function createMainWindow() {
 }
 function checkForUpdates() {
     // Check for updates.
-    https.get({
-        hostname: 'instatech.org',
-        path: '/Services/GetCPClientVersion.cshtml',
-        method: "GET",
-        headers: {
-            "Access-Control-Allow-Origin": "*"
-        },
-    }, function (res) {
+    https.get(versionURL, function (res) {
         res.on("data", function (ver) {
             if (ver != electron.app.getVersion()) {
                 electron.dialog.showMessageBox({
                     type: "question",
                     title: "Update Available",
-                    message: "A new version is available.  Would you like to go to the InstaTech site to download it?",
+                    message: "A new version is available.  Would you like to install it now?",
                     buttons: ["Yes", "No"],
                     defaultId: 0,
                     cancelId: 1
                 }, function (selection) {
                     if (selection == 0) {
-                        electron.shell.openExternal("https://instatech.org/Downloads");
+                        var downloadURL;
+                        switch (process.platform) {
+                            case "win32":
+                                downloadURL = downloadURLWindows;
+                                break;
+                            case "linux":
+                                downloadURL = downloadURLLinux;
+                                break;
+                            case "darwin":
+                                downloadURL = downloadURLMac;
+                                break;
+                            default:
+                                downloadURL = "";
+                        }
+                        var fileName = downloadURL.split("/")[downloadURL.split("/").length - 1];
+                        if (!fs.existsSync(os.tmpdir() + "\\" + fileName)) {
+                            fs.unlinkSync(os.tmpdir() + "\\" + fileName);
+                        };
+                        https.get(downloadURL, function (result) {
+                            var stream = fs.createWriteStream(os.tmpdir() + "\\" + fileName);
+                            result.pipe(stream);
+                            stream.on("finish", function () {
+                                stream.close();
+                                electron.shell.openExternal(os.tmpdir() + "\\" + fileName);
+                                electron.remote.app.exit(0);
+                            });
+                        });
                     }
                 })
             }
@@ -84,6 +108,7 @@ function deleteFolderRecursive(path) {
         fs.rmdirSync(path);
     }
 };
+
 function cleanupTempFiles() {
     // Remove previous session's temp files (if any).
     if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {

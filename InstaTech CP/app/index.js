@@ -1,6 +1,4 @@
-﻿///<reference path="../typings/index.d.ts" />
-
-window.onerror = function (message, source, lineno, colno, error) {
+﻿window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
     var os = require("os");
     fs.appendFile(os.tmpdir() + "/InstaTech_CP_Errors.txt", new Date().toString() + "\t" +  message + "\r\n");
@@ -10,6 +8,38 @@ window.onerror = function (message, source, lineno, colno, error) {
         return true;
     }
 };
+
+// ***  Config: Change these variables for your environment.  *** //
+// global.debug is set in main.js.
+
+// Websocket protocol.
+var wsProtocol;
+// HTTP protocol.
+var httpProtocol;
+// Server host name.
+var hostname;
+// Websocket service path.
+var wsPath;
+// File transfer service path.
+var ftPath;
+if (require("electron").remote.getGlobal("debug")) {
+    wsProtocol = "ws://";
+    httpProtocol = "http://";
+    hostname = "localhost:52422";
+    wsPath = "/Services/Remote_Control_Socket.cshtml";
+    ftPath = "/Services/FileTransfer.cshtml";
+} else {
+    wsProtocol = "wss://";
+    httpProtocol = "https://";
+    hostname = "instatech.org";
+    wsPath = "/Demo/Services/Remote_Control_Socket.cshtml";
+    ftPath = "/Demo/Services/FileTransfer.cshtml";
+}
+wsProtocol = "wss://";
+httpProtocol = "https://";
+hostname = "instatech.org";
+wsPath = "/Sockets/ScreenViewer.cshtml";
+
 const robot = require("robotjs");
 const electron = require('electron');
 const fs = require("fs");
@@ -26,26 +56,14 @@ var totalHeight = 0;
 var lastMouseMove;
 var videoQuality = .75;
 var useWebSocket = false;
-// Changes target server and protocol based on global.debug in main.js.
-var wsProtocol;
-var httpProtocol;
-var hostname;
-if (electron.remote.getGlobal("debug")) {
-    wsProtocol = "ws://";
-    httpProtocol = "http://";
-    hostname = "localhost:4668";
-} else {
-    wsProtocol = "wss://";
-    httpProtocol = "https://";
-    hostname = "instatech.org";
-}
+
 // Offsets are the left and top edge of the screen, in case multiple monitor setups
 // create a situation where the edge of a monitor is in the negative.  This must
 // be converted to a 0-based max left/top to render images on the canvas properly.
 var offsetX = 0;
 var offsetY = 0;
 function openWebSocket() {
-    socket = new WebSocket(wsProtocol + hostname + "/Sockets/ScreenViewer.cshtml");
+    socket = new WebSocket(wsProtocol + hostname + wsPath);
     socket.onopen = function (e) {
         var request = {
             "Type": "ConnectionType",
@@ -132,7 +150,7 @@ function openWebSocket() {
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
                     fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
                 };
-                var strPath = httpProtocol + hostname + "/Services/FileTransfer.cshtml";
+                var strPath = httpProtocol + hostname + ftPath;
                 var retrievalCode = jsonMessage.RetrievalCode;
                 var request = {
                     "Type": "Download",
