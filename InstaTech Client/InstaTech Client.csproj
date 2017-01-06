@@ -37,7 +37,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Assets\InstaTech Logo.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\InstaTech.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -121,16 +121,18 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\HamburgerMenu_16x.png" />
-    <Resource Include="Assets\InstaTech Logo.ico" />
-    <Resource Include="Assets\InstaTech Logo.png" />
     <Resource Include="Assets\ITCBackground.png" />
     <Resource Include="Assets\T %28About%29.png" />
     <Resource Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="bin\Release\" />
-    <Folder Include="obj\" />
     <Folder Include="packages\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\InstaTech.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\InstaTech.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />

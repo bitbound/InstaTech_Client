@@ -1,7 +1,7 @@
 {
   "name": "instatechcp",
   "productName": "InstaTech CP",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "InstaTech Cross-Platform Client",
   "license": "Apache-2.0",
   "author": {
@@ -29,7 +29,6 @@
     "electron"
   ],
   "dependencies": {
-    "robotjs": "^0.4.5",
-    "electron-squirrel-startup": "^1.0.0"
+    "robotjs": "^0.4.5"
   }
 }

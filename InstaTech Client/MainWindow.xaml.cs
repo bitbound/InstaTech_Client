@@ -36,8 +36,8 @@ namespace InstaTech_Client
         public static MainWindow Current { get; set; }
 
         // ***  Config: Change these variables for your environment.  *** //
-        string downloadURI = "https://instatech.org/Downloads/InstaTech Client.exe";
-        string versionURI = "https://instatech.org/Services/GetWinClientVersion.cshtml";
+        string downloadURI = "https://instatech.org/Demo/Downloads/InstaTech Client.exe";
+        string versionURI = "https://instatech.org/Demo/Services/Get_Win_Client_Version.cshtml";
 #if DEBUG
         string socketPath = "ws://localhost:52422/Services/Remote_Control_Socket.cshtml";
 #else

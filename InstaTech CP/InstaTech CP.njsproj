@@ -59,8 +59,8 @@
     <Content Include="Assets\icons\48x48.png" />
     <Content Include="Assets\icons\64x64.png" />
     <Content Include="Assets\icons\96x96.png" />
-    <Content Include="Assets\InstaTech Logo.ico" />
-    <Content Include="Assets\InstaTech Logo.png" />
+    <Content Include="Assets\InstaTech.ico" />
+    <Content Include="Assets\InstaTech.png" />
     <Content Include="Assets\ITCBackground.png" />
     <Content Include="Assets\T %28About%29.png" />
     <Content Include="build\icons\16x16.png" />
@@ -87,6 +87,7 @@
     <Folder Include="app\build\icons\" />
     <Folder Include="app\Scripts\" />
     <Folder Include="Assets\" />
+    <Folder Include="Assets\icons\" />
     <Folder Include="build\" />
     <Folder Include="build\icons\" />
     <Folder Include="Scripts\" />

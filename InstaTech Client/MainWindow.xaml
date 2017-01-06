@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InstaTech_Client"
         mc:Ignorable="d"
-        Title="InstaTech" Height="250" Width="300" ResizeMode="NoResize" Loaded="Window_Loaded" MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="Assets/InstaTech Logo.png">
+        Title="InstaTech" Height="250" Width="300" ResizeMode="NoResize" Loaded="Window_Loaded" MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="Assets/InstaTech.png">
     <Grid>
         <Grid.Background>
             <ImageBrush ImageSource="Assets/ITCBackground.png" Opacity="0.75"/>

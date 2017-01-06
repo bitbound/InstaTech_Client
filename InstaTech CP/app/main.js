@@ -1,11 +1,11 @@
 // ***  Config: Change these variables for your environment.  *** //
 
 // A service URL that will respond to a GET request with the current version.
-var versionURL = "https://instatech.org/Services/GetCPClientVersion.cshtml";
+var versionURL = "https://instatech.org/Demo/Services/Get_CP_Client_Version.cshtml";
 // The URLs of the application's current version per OS.
-var downloadURLWindows = "https://instatech.org/Downloads/InstaTech_CP.exe";
+var downloadURLWindows = "https://instatech.org/Demo/Downloads/InstaTech_CP.exe";
 var downloadURLMac = "";
-var downloadURLLinux = "https://instatech.org/Downloads/InstaTech_CP.AppImage";
+var downloadURLLinux = "https://instatech.org/Demo/Downloads/InstaTech_CP.AppImage";
 
 const electron = require('electron');
 
@@ -27,7 +27,7 @@ function createMainWindow() {
         height: 250,
         show: false,
         title: "InstaTech",
-        icon: `file://${__dirname}/Assets/InstaTech Logo.ico`
+        icon: `file://${__dirname}/Assets/InstaTech.ico`
     });
     win.setMenuBarVisibility(global.debug);
     win.setResizable(global.debug);

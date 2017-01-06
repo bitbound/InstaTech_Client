@@ -35,10 +35,6 @@ if (require("electron").remote.getGlobal("debug")) {
     wsPath = "/Demo/Services/Remote_Control_Socket.cshtml";
     ftPath = "/Demo/Services/FileTransfer.cshtml";
 }
-wsProtocol = "wss://";
-httpProtocol = "https://";
-hostname = "instatech.org";
-wsPath = "/Sockets/ScreenViewer.cshtml";
 
 const robot = require("robotjs");
 const electron = require('electron');
@@ -458,7 +454,7 @@ function openAbout() {
         height: 350,
         show: false,
         title: "About InstaTech",
-        icon: `file://${__dirname}/Assets/InstaTech Logo.ico`
+        icon: `file://${__dirname}/Assets/InstaTech.ico`
     })
     about.setMenuBarVisibility(false);
     about.loadURL(`file://${__dirname}/about.html`);

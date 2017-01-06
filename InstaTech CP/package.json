@@ -1,7 +1,7 @@
 {
   "name": "instatechcp",
   "productName": "InstaTech CP",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "InstaTech Cross-Platform Client",
   "license": "Apache-2.0",
   "author": {
@@ -36,14 +36,14 @@
   "devDependencies": {
     "devtron": "^1.1.0",
     "electron": "^1.4.4",
+    "electron-builder": "^10.17.3",
     "electron-debug": "^1.0.0"
   },
-  
   "build": {
     "appId": "InstaTech CP",
     "category": "Utility",
     "win": {
-      "iconUrl": "https://instatech.org/Assets/Images/InstaTech Logo.ico"
+      "iconUrl": "https://instatech.org/Assets/Images/InstaTech.ico"
     }
   }
 }

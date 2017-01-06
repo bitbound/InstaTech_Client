@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InstaTech_Client"
         mc:Ignorable="d"
-        Title="About InstaTech" Height="325" Width="400"  WindowStartupLocation="CenterOwner" Icon="Assets/InstaTech Logo.png">
+        Title="About InstaTech" Height="325" Width="400"  WindowStartupLocation="CenterOwner" Icon="Assets/InstaTech.png">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
