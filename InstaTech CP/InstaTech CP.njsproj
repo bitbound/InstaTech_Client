@@ -38,7 +38,6 @@
     <Content Include="app\Assets\ITCBackground.png" />
     <Content Include="app\Assets\T %28About%29.png" />
     <Content Include="app\build\config.gypi" />
-    <Content Include="app\build\icon.icns" />
     <Content Include="app\build\icon.ico" />
     <Content Include="app\build\icons\128x128.png" />
     <Content Include="app\build\icons\16x16.png" />
@@ -48,6 +47,7 @@
     <Content Include="app\build\icons\48x48.png" />
     <Content Include="app\build\icons\64x64.png" />
     <Content Include="app\build\icons\96x96.png" />
+    <Content Include="app\build\icon.icns" />
     <Content Include="app\index.css" />
     <Content Include="app\index.html" />
     <Content Include="app\package.json" />
