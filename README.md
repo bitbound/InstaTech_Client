@@ -15,4 +15,4 @@ The cross-platform version is larger than the WPF and uses an installer.  Howeve
 ### Remote Control
 Both versions, when launched, will generate a random session code.  Enter that code into the web-based remote control to view the remote computer and/or take control.  I haven't yet open-sourced the server code, but I might in the near future.
 
-The remote control tool is currently located at https://instatech.org/ScreenViewer.
+The remote control tool is currently located at https://instatech.org/Demo/Remote_Control.
