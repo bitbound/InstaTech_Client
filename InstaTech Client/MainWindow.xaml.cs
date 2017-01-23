@@ -63,24 +63,19 @@ namespace InstaTech_Client
         bool capturing = false;
         int totalHeight = 0;
         int totalWidth = 0;
-        long jpegQuality = 75;
+        long jpegQuality = 100;
         // Offsets are the left and top edge of the screen, in case multiple monitor setups
         // create a situation where the edge of a monitor is in the negative.  This must
         // be converted to a 0-based max left/top to render images on the canvas properly.
         int offsetX = 0;
         int offsetY = 0;
         bool sendFullScreenshot = true;
-        // Stores the value for the registry key related to admin prompt behavior
-        // when elevating processes.
-        int? uacAdminPromptValue;
-
 
         public MainWindow()
         {
             InitializeComponent();
             Current = this;
             App.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
-            AppDomain.CurrentDomain.ProcessExit += (sen, arg) => { setUACAdminPromptValue(uacAdminPromptValue ?? 5); };
             checkArgs(Environment.GetCommandLineArgs());
         }
 
@@ -107,7 +102,6 @@ namespace InstaTech_Client
 
             initEncoder();
             initWebSocket();
-            setUACAdminPromptValue(0);
 
             // Initialize variables requiring screen dimensions.
             totalWidth = SystemInformation.VirtualScreen.Width;
@@ -129,7 +123,6 @@ namespace InstaTech_Client
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             e.Handled = true;
-            setUACAdminPromptValue(uacAdminPromptValue ?? 5);
             writeToErrorLog(e.Exception);
             System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  If the issue persists, please contact the developer.", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
             // *** Example of additional error handling. *** //
@@ -228,24 +221,6 @@ namespace InstaTech_Client
             await Task.Delay(1000);
             tt.IsOpen = false;
             tt = null;
-        }
-
-        private void setUACAdminPromptValue(int value)
-        {
-            // Set the value for UAC prompting behavior for admin accounts.  Also stores the current value to be restored
-            // when the application closes.  0 is do not prompt, just run process elevated when requested.  5 is the
-            // default, which prompts for non-Microsoft binaries.  This is done because InstaTech, even when elevated,
-            // can't interact with UAC consent prompts.
-            try
-            {
-                var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
-                if (uacAdminPromptValue == null)
-                {
-                    uacAdminPromptValue = (int)key.GetValue("ConsentPromptBehaviorAdmin");
-                }
-                key.SetValue("ConsentPromptBehaviorAdmin", value);
-            }
-            catch { }
         }
 
         private async void initWebSocket()
@@ -517,18 +492,21 @@ namespace InstaTech_Client
             {
                 return;
             }
-
+            
             try
             {
-                graphic.CopyFromScreen(new System.Drawing.Point(offsetX, offsetY), System.Drawing.Point.Empty, new System.Drawing.Size(totalWidth, totalHeight));
+                var graphDC = graphic.GetHdc();
+                var deskDC = GDI32.CreateDC("DISPLAY", null, null, IntPtr.Zero);
+                GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, deskDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                graphic.ReleaseHdc(graphDC);
+                GDI32.DeleteDC(deskDC);
+                //graphic.CopyFromScreen(new System.Drawing.Point(offsetX, offsetY), System.Drawing.Point.Empty, new System.Drawing.Size(totalWidth, totalHeight));
             }
-            catch
+            catch (Exception ex)
             {
                 graphic.Clear(System.Drawing.Color.White);
                 var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
                 graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
-                User32.PrintWindow(User32.GetDesktopWindow(), graphic.GetHdc(), 0);
-                graphic.ReleaseHdc();
             }
             try
             {

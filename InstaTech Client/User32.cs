@@ -96,6 +96,31 @@ namespace InstaTech_Client
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool PrintWindow(IntPtr hwnd, IntPtr hDC, uint nFlags);
 
+        [DllImport("user32.dll")]
+        static extern bool SwitchDesktop(IntPtr hDesktop);
+
+        private delegate bool EnumDesktopsDelegate(string desktop, IntPtr lParam);
+        [DllImport("user32.dll")]
+        static extern bool EnumDesktops(IntPtr hwinsta, EnumDesktopsDelegate lpEnumFunc, IntPtr lParam);
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr OpenInputDesktop(uint dwFlags, bool fInherit, uint dwDesiredAccess);
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetShellWindow();
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+        public delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool EnumChildWindows(IntPtr hwndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
+        [DllImport("User32.dll")]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        // *** Public Methods *** //
+        public static IntPtr GetActiveDesktop()
+        {
+            return OpenInputDesktop(0, true, (uint)0x00020000L);
+        }
         public static void sendLeftMouseDown(int x, int y)
         {
             mouse_event(User32.MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, 0);
