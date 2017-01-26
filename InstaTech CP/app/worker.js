@@ -10,14 +10,12 @@ const electron = require('electron');
 const robot = require("robotjs");
 const fs = require("fs");
 const os = require("os");
-var jpegQuality = 75;
 var win = electron.remote.getCurrentWindow();
 var mainWindow = electron.remote.BrowserWindow.fromId(1);
 var ctx;
 var fr = new FileReader();
 var imgData;
 var video;
-var videoQuality = .75;
 var img;
 var byteSuffix;
 var lastFrame;
@@ -36,17 +34,17 @@ var offsetY = 0;
 function getCapture() {
     video = document.getElementById("videoScreen");
     if (video.src == "") {
-        ctx.canvas.width = Math.round(totalWidth * videoQuality);
-        ctx.canvas.height = Math.round(totalHeight * videoQuality);
+        ctx.canvas.width = Math.round(totalWidth);
+        ctx.canvas.height = Math.round(totalHeight);
         navigator.webkitGetUserMedia({
             audio: false,
             video: {
                 mandatory: {
                     chromeMediaSource: 'desktop',
-                    minWidth: Math.round(totalWidth * videoQuality),
-                    maxWidth: Math.round(totalWidth * videoQuality),
-                    minHeight: Math.round(totalHeight * videoQuality),
-                    maxHeight: Math.round(totalHeight * videoQuality),
+                    minWidth: Math.round(totalWidth),
+                    maxWidth: Math.round(totalWidth),
+                    minHeight: Math.round(totalHeight),
+                    maxHeight: Math.round(totalHeight),
                 }
             }
         }, function (stream) {
@@ -68,7 +66,7 @@ function captureImage() {
     imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
     if (sendFullScreenshot || lastFrame == undefined) {
         sendFullScreenshot = false;
-        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(ctx.canvas.toDataURL()).toJpeg(jpegQuality), new Uint8Array(4)]);
+        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(ctx.canvas.toDataURL()).toJpeg(100), new Uint8Array(4)]);
     }
     else {
         getChangedPixels(imgData, lastFrame);
@@ -144,7 +142,7 @@ function getChangedPixels(newImgData, oldImgData) {
         tempCanvas.width = boundingBox.width;
         tempCanvas.height = boundingBox.height;
         tempCanvas.getContext("2d").drawImage(ctx.canvas, boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height, 0, 0, boundingBox.width, boundingBox.height);
-        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(tempCanvas.toDataURL()).toJpeg(jpegQuality), byteSuffix]);
+        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(tempCanvas.toDataURL()).toJpeg(100), byteSuffix]);
     }
     else {
         croppedFrame = null;

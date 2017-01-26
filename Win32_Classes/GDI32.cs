@@ -5,10 +5,11 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace InstaTech_Client
+namespace Win32_Classes
 {
     public static class GDI32
     {
+        #region Enums
         /// <summary>
         ///     Specifies a raster-operation code. These codes define how the color data for the
         ///     source rectangle is to be combined with the color data for the destination
@@ -52,7 +53,10 @@ namespace InstaTech_Client
             /// </summary>
             CAPTUREBLT = 0x40000000
         }
-        
+        #endregion
+
+        #region DLL Imports
+
         [DllImport("gdi32.dll", EntryPoint = "BitBlt", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool BitBlt([In] IntPtr hdc, int nXDest, int nYDest, int nWidth, int nHeight, [In] IntPtr hdcSrc, int nXSrc, int nYSrc, TernaryRasterOperations dwRop);
@@ -75,5 +79,7 @@ namespace InstaTech_Client
 
         [DllImport("GDI32.dll")]
         public static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
+
+        #endregion
     }
 }

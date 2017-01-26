@@ -50,7 +50,6 @@ var capturing = false;
 var totalWidth = 0;
 var totalHeight = 0;
 var lastMouseMove;
-var videoQuality = .75;
 var useWebSocket = false;
 
 // Offsets are the left and top edge of the screen, in case multiple monitor setups
@@ -162,15 +161,6 @@ function openWebSocket() {
                 electron.clipboard.writeText(atob(jsonMessage.Data));
                 showTooltip($("#inputFilesTransferred"), "left", "black", "Clipboard data set.");
                 break;
-            case "ChangeImageQuality":
-                worker.webContents.executeJavaScript('jpegQuality = ' + jsonMessage.Value);
-                break;
-            case "ChangeResolution":
-                worker.webContents.executeJavaScript('videoQuality = ' + jsonMessage.Value);
-                videoQuality = Number(jsonMessage.Value);
-                rtcConnection.removeStream(rtcConnection.getLocalStreams()[0]);
-                addRTCMedia();
-                break;
             case "MouseMove":
                 if (Date.now() - lastMouseMove < 500) {
                     return;
@@ -256,8 +246,8 @@ function openWebSocket() {
 function sendBounds() {
     var request = {
         "Type": "Bounds",
-        "Width": totalWidth * videoQuality, // Bounds are modified by videoQuality.
-        "Height": totalHeight * videoQuality // Bounds are modified by videoQuality.
+        "Width": totalWidth,
+        "Height": totalHeight
     };
     socket.send(JSON.stringify(request));
 };

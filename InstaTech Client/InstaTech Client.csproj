@@ -70,8 +70,6 @@
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="GDI32.cs" />
-    <Compile Include="User32.cs" />
     <Page Include="AboutWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -132,6 +130,15 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\InstaTech.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Win32_Classes\Win32_Classes.csproj">
+      <Project>{2a120f3c-0f03-4388-a686-1d09298987fc}</Project>
+      <Name>Win32_Classes</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
