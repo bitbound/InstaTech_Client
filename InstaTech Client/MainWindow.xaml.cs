@@ -360,21 +360,21 @@ namespace InstaTech_Client
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.sendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.sendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 break;
                             case "MouseUp":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.sendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.sendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 break;
                             case "TouchMove":
@@ -383,21 +383,21 @@ namespace InstaTech_Client
                                 break;
                             case "Tap":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.sendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "TouchDown":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
                                 break;
                             case "LongPress":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendRightMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.sendRightMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "TouchUp":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "KeyPress":
                                 try

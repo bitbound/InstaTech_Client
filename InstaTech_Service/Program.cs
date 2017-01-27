@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Configuration.Install;
 using System.Diagnostics;
@@ -6,17 +7,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
+using Win32_Classes;
 
 namespace InstaTech_Service
 {
     static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
         static void Main()
         {
             var args = Environment.GetCommandLineArgs().ToList();
@@ -41,6 +41,7 @@ namespace InstaTech_Service
                 ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
                 ServiceInstallerObj.ServiceName = "InstaTech_Service";
                 ServiceInstallerObj.StartType = ServiceStartMode.Automatic;
+                ServiceInstallerObj.DelayedAutoStart = true;
                 ServiceInstallerObj.Parent = new ServiceProcessInstaller();
 
                 System.Collections.Specialized.ListDictionary state = new System.Collections.Specialized.ListDictionary();
@@ -51,6 +52,7 @@ namespace InstaTech_Service
                 {
                     serv.Start();
                 }
+                Process.Start("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
             }
             else if (args.Exists(str => str.ToLower() == "-uninstall"))
             {

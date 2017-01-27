@@ -221,6 +221,8 @@ namespace Win32_Classes
 
         [DllImport("user32.dll")]
         public static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, ACCESS_MASK dwDesiredAccess);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool CloseDesktop(IntPtr hDesktop);
 
         public delegate bool EnumDesktopWindowsDelegate(IntPtr hWnd, int lParam);
 
@@ -238,24 +240,23 @@ namespace Win32_Classes
         {
             return OpenInputDesktop(0, true, ACCESS_MASK.READ_CONTROL);
         }
-
-        public static void sendLeftMouseDown(int x, int y)
+        public static void SendLeftMouseDown(int x, int y)
         {
             mouse_event(User32.MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, 0);
         }
-        public static void sendLeftMouseUp(int x, int y)
+        public static void SendLeftMouseUp(int x, int y)
         {
             mouse_event(User32.MOUSEEVENTF_LEFTUP, (uint)x, (uint)y, 0, 0);
         }
-        public static void sendRightMouseDown(int x, int y)
+        public static void SendRightMouseDown(int x, int y)
         {
             mouse_event(User32.MOUSEEVENTF_RIGHTDOWN, (uint)x, (uint)y, 0, 0);
         }
-        public static void sendRightMouseUp(int x, int y)
+        public static void SendRightMouseUp(int x, int y)
         {
             mouse_event(User32.MOUSEEVENTF_RIGHTUP, (uint)x, (uint)y, 0, 0);
         }
-        public static void sendMouseMove(int x, int y)
+        public static void SendMouseMove(int x, int y)
         {
             mouse_event(MOUSEEVENTF_MOVE, (uint)x, (uint)y, 0, MOUSEEVENTF_ABSOLUTE);
         }

@@ -47,7 +47,9 @@
     <Compile Include="GDI32.cs" />
     <Compile Include="Kernel32.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SECUR32.cs" />
     <Compile Include="User32.cs" />
+    <Compile Include="WTSAPI32.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

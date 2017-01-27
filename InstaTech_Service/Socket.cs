@@ -190,21 +190,21 @@ namespace InstaTech_Service
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.sendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.sendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 break;
                             case "MouseUp":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.sendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.sendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 }
                                 break;
                             case "TouchMove":
@@ -213,21 +213,21 @@ namespace InstaTech_Service
                                 break;
                             case "Tap":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.sendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "TouchDown":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
                                 break;
                             case "LongPress":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendRightMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.sendRightMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "TouchUp":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.sendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
                                 break;
                             case "KeyPress":
                                 try
@@ -254,10 +254,10 @@ namespace InstaTech_Service
                                 }
                                 break;
                             case "PartnerClose":
-                                Environment.Exit(0);
+                                Application.Exit();
                                 break;
                             case "PartnerError":
-                                Environment.Exit(0);
+                                Application.Exit();
                                 break;
                             default:
                                 break;
@@ -268,7 +268,7 @@ namespace InstaTech_Service
             catch (Exception ex)
             {
                 writeToErrorLog(ex);
-                Environment.Exit(2);
+                Application.Exit();
             }
         }
 
@@ -292,6 +292,16 @@ namespace InstaTech_Service
                         switch ((string)jsonMessage.Type)
                         {
                             case "ConnectUnattended":
+                                var thisProc = System.Diagnostics.Process.GetCurrentProcess();
+                                var allProcs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service");
+                                foreach (var proc in allProcs)
+                                {
+                                    if (proc.SessionId != thisProc.SessionId)
+                                    {
+                                        proc.Kill();
+                                    }
+                                }
+
                                 var procInfo = new ADVAPI32.PROCESS_INFORMATION();
                                 var processResult = ADVAPI32.OpenProcessAsSystem(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", out procInfo);
                                 if (processResult == false)
@@ -318,8 +328,11 @@ namespace InstaTech_Service
                                     await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
                                 }
                                 break;
-                            case "ServiceRunning":
+                            case "ServiceDuplicate":
                                 writeToErrorLog(new Exception("Service is already running on another computer with the same name."));
+                                break;
+                            case "Uninstall":
+                                System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall");
                                 break;
                             default:
                                 break;
@@ -330,7 +343,7 @@ namespace InstaTech_Service
             catch (Exception ex)
             {
                 writeToErrorLog(ex);
-                StartService();
+                throw ex;
             }
         }
 
@@ -373,19 +386,23 @@ namespace InstaTech_Service
 
             try
             {
-                var station = User32.OpenWindowStation("WinSta0", true, User32.ACCESS_MASK.MAXIMUM_ALLOWED);
-                var result = User32.SetProcessWindowStation(station.DangerousGetHandle());
-                var inputDesktop = User32.OpenInputDesktop();
-                if (User32.SetThreadDesktop(inputDesktop) == false)
-                {
-                    var error = Marshal.GetLastWin32Error();
-                    writeToErrorLog(new Exception("Failed to open input desktop.  Error: " + error.ToString()));
-                }
-
+                //var station = User32.OpenWindowStation("WinSta0", true, User32.ACCESS_MASK.MAXIMUM_ALLOWED);
+                //var result = User32.SetProcessWindowStation(station.DangerousGetHandle());
                 var hWnd = User32.GetDesktopWindow();
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
-                GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                // Change to input desktop if copy fails.
+                if (!copyResult)
+                {
+                    var inputDesktop = User32.OpenInputDesktop();
+                    if (User32.SetThreadDesktop(inputDesktop) == false)
+                    {
+                        var error = Marshal.GetLastWin32Error();
+                        writeToErrorLog(new Exception("Failed to open input desktop.  Error: " + error.ToString()));
+                    }
+                    User32.CloseDesktop(inputDesktop);
+                }
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
                 //IntPtr deskDC = GDI32.CreateDC("DISPLAY", null, null, IntPtr.Zero);
@@ -397,7 +414,7 @@ namespace InstaTech_Service
             catch
             {
                 graphic.Clear(System.Drawing.Color.White);
-                var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
                 graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
             }
             try

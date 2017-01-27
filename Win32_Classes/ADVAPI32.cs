@@ -52,7 +52,7 @@ namespace Win32_Classes
         #endregion
 
         #region Enums
-        enum LOGON_TYPE
+        public enum LOGON_TYPE
         {
             LOGON32_LOGON_INTERACTIVE = 2,
             LOGON32_LOGON_NETWORK,
@@ -62,7 +62,7 @@ namespace Win32_Classes
             LOGON32_LOGON_NETWORK_CLEARTEXT,
             LOGON32_LOGON_NEW_CREDENTIALS
         }
-        enum LOGON_PROVIDER
+        public enum LOGON_PROVIDER
         {
             LOGON32_PROVIDER_DEFAULT,
             LOGON32_PROVIDER_WINNT35,
@@ -70,7 +70,7 @@ namespace Win32_Classes
             LOGON32_PROVIDER_WINNT50
         }
         [Flags]
-        enum CreateProcessFlags
+        public enum CreateProcessFlags
         {
             CREATE_BREAKAWAY_FROM_JOB = 0x01000000,
             CREATE_DEFAULT_ERROR_MODE = 0x04000000,
@@ -89,13 +89,13 @@ namespace Win32_Classes
             EXTENDED_STARTUPINFO_PRESENT = 0x00080000,
             INHERIT_PARENT_AFFINITY = 0x00010000
         }
-        enum TOKEN_TYPE : int
+        public enum TOKEN_TYPE : int
         {
             TokenPrimary = 1,
             TokenImpersonation = 2
         }
 
-        enum SECURITY_IMPERSONATION_LEVEL : int
+        public enum SECURITY_IMPERSONATION_LEVEL : int
         {
             SecurityAnonymous = 0,
             SecurityIdentification = 1,
@@ -119,7 +119,7 @@ namespace Win32_Classes
         #region DLL Imports
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        static extern bool CreateProcessAsUser(
+        public static extern bool CreateProcessAsUser(
             IntPtr hToken,
             string lpApplicationName,
             string lpCommandLine,
@@ -132,22 +132,37 @@ namespace Win32_Classes
             ref STARTUPINFO lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);
 
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool AllocateLocallyUniqueId(out IntPtr pLuid);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = false)]
+        public static extern SECUR32.WinErrors LsaNtStatusToWinError(SECUR32.WinStatusCodes status);
+
+        [DllImport("advapi32.dll", SetLastError = true)]
+        public static extern bool GetTokenInformation(
+            IntPtr TokenHandle,
+            SECUR32.TOKEN_INFORMATION_CLASS TokenInformationClass,
+            IntPtr TokenInformation,
+            uint TokenInformationLength,
+            out uint ReturnLength);
+
         [DllImport("advapi32.dll", SetLastError = true, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool LogonUser(
+        public static extern bool LogonUser(
             [MarshalAs(UnmanagedType.LPStr)] string pszUserName,
             [MarshalAs(UnmanagedType.LPStr)] string pszDomain,
             [MarshalAs(UnmanagedType.LPStr)] string pszPassword,
             int dwLogonType,
             int dwLogonProvider,
-            ref IntPtr phToken);
+            out IntPtr phToken);
 
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
-        static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
+        public static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
         [DllImport("advapi32.dll", EntryPoint = "DuplicateTokenEx")]
         public extern static bool DuplicateTokenEx(IntPtr ExistingTokenHandle, uint dwDesiredAccess,
             ref SECURITY_ATTRIBUTES lpThreadAttributes, int TokenType,
             int ImpersonationLevel, ref IntPtr DuplicateTokenHandle);
+
 
         #endregion
 
@@ -155,6 +170,7 @@ namespace Win32_Classes
         {
             try
             {
+
                 uint winlogonPid = 0;
                 IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
                 procInfo = new PROCESS_INFORMATION();
@@ -162,6 +178,13 @@ namespace Win32_Classes
                 // obtain the currently active session id; every logged on user in the system has a unique session id
                 uint dwSessionId = Kernel32.WTSGetActiveConsoleSessionId();
 
+                // Check for RDP session.  If active, use that session ID instead.
+                var rdpSessionID = GetRDPSession();
+                if (rdpSessionID > 0)
+                {
+                    dwSessionId = rdpSessionID;
+                }
+                
                 // obtain the process id of the winlogon process that is running within the currently active session
                 Process[] processes = Process.GetProcessesByName("winlogon");
                 foreach (Process p in processes)
@@ -228,7 +251,7 @@ namespace Win32_Classes
                 Kernel32.CloseHandle(hPToken);
                 Kernel32.CloseHandle(hUserTokenDup);
 
-                return result; // return the result
+                return result;
             }
             catch
             {
@@ -236,6 +259,31 @@ namespace Win32_Classes
                 return false;
             }
         }
-        
+        public static uint GetRDPSession()
+        {
+            IntPtr ppSessionInfo = IntPtr.Zero;
+            Int32 count = 0;
+            Int32 retval = WTSAPI32.WTSEnumerateSessions(WTSAPI32.WTS_CURRENT_SERVER_HANDLE, 0, 1, ref ppSessionInfo, ref count);
+            Int32 dataSize = Marshal.SizeOf(typeof(WTSAPI32.WTS_SESSION_INFO));
+            var sessList = new List<WTSAPI32.WTS_SESSION_INFO>();
+            Int64 current = (int)ppSessionInfo;
+
+            if (retval != 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    WTSAPI32.WTS_SESSION_INFO sessInf = (WTSAPI32.WTS_SESSION_INFO)Marshal.PtrToStructure((System.IntPtr)current, typeof(WTSAPI32.WTS_SESSION_INFO));
+                    current += dataSize;
+                    sessList.Add(sessInf);
+                }
+            }
+            uint retVal = 0;
+            var rdpSession = sessList.Find(ses => ses.pWinStationName.ToLower().Contains("rdp") && ses.State == 0);
+            if (sessList.Exists(ses => ses.pWinStationName.ToLower().Contains("rdp") && ses.State == 0))
+            {
+                retVal = (uint)rdpSession.SessionID;
+            }
+            return retVal;
+        }
     }
 }
