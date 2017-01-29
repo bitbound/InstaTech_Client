@@ -70,6 +70,8 @@ namespace InstaTech_Client
         System.Drawing.Point cursorPos;
         bool sendFullScreenshot = true;
         IntPtr deskDC = GDI32.CreateDC("DISPLAY", null, null, IntPtr.Zero);
+        List<dynamic> mouseMoveStack = new List<dynamic>();
+        List<dynamic> touchMoveStack = new List<dynamic>();
 
         public MainWindow()
         {
@@ -494,25 +496,12 @@ namespace InstaTech_Client
             
             try
             {
-                var station = User32.OpenWindowStation("WinSta0", true, User32.ACCESS_MASK.MAXIMUM_ALLOWED);
-                User32.SetProcessWindowStation(station.DangerousGetHandle());
-                var inputDesktop = User32.OpenInputDesktop();
-                if (User32.SetThreadDesktop(inputDesktop) == false)
-                {
-                    var error = Marshal.GetLastWin32Error();
-                    writeToErrorLog(new Exception("Failed to open input desktop.  Error: " + error.ToString()));
-                }
-
                 var hWnd = User32.GetDesktopWindow();
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
                 GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
-
-                //var graphDC = graphic.GetHdc();
-                //GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, deskDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
-                //graphic.ReleaseHdc(graphDC);
             }
             catch
             {

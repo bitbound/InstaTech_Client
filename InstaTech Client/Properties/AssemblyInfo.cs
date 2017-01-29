@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Translucency")]
 [assembly: AssemblyProduct("InstaTech Client")]
-[assembly: AssemblyCopyright("Copyright ©  2016 Translucency.  All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright ©  2017 Translucency.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -51,5 +51,5 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.9.10.0")]
-[assembly: AssemblyFileVersion("0.9.10.0")]
+[assembly: AssemblyVersion("0.9.11.0")]
+[assembly: AssemblyFileVersion("0.9.11.0")]

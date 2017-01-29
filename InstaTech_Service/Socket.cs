@@ -185,7 +185,8 @@ namespace InstaTech_Service
                                 System.Windows.Clipboard.SetText(Encoding.UTF8.GetString(arrData));
                                 break;
                             case "MouseMove":
-                                User32.SetCursorPos((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
+                                //User32.SetCursorPos((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
@@ -401,6 +402,9 @@ namespace InstaTech_Service
                         var error = Marshal.GetLastWin32Error();
                         writeToErrorLog(new Exception("Failed to open input desktop.  Error: " + error.ToString()));
                     }
+                    var dw = User32.GetDesktopWindow();
+                    User32.SetActiveWindow(dw);
+                    User32.SetForegroundWindow(dw);
                     User32.CloseDesktop(inputDesktop);
                 }
                 graphic.ReleaseHdc(graphDC);
@@ -574,7 +578,12 @@ namespace InstaTech_Service
             var exception = ex;
             while (ex != null)
             {
-                File.AppendAllText(System.IO.Path.GetTempPath() + "InstaTech_Service_Errors.txt", DateTime.Now.ToString() + "\t" + ex.Message + "\t" + ex.StackTrace + Environment.NewLine);
+                var path = System.IO.Path.GetTempPath() + "InstaTech_Service_Errors.txt";
+                if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Errors.txt";
+                }
+                File.AppendAllText(path, DateTime.Now.ToString() + "\t" + ex.Message + "\t" + ex.StackTrace + Environment.NewLine);
                 ex = ex.InnerException;
             }
         }

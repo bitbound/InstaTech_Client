@@ -5,6 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Win32_Classes;
+using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
+using System.Runtime.ConstrainedExecution;
+using System.IO;
 
 public static class SECUR32
 {
@@ -284,6 +288,43 @@ public static class SECUR32
     [DllImport("secur32.dll", SetLastError = false)]
     public static extern WinStatusCodes LsaLookupAuthenticationPackage([In] IntPtr LsaHandle, [In] ref LSA_STRING PackageName, [Out] out UInt32 AuthenticationPackage);
 
+    [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [ResourceExposure(ResourceScope.None)]
+    internal static extern int LsaConnectUntrusted(
+            [In, Out] ref SafeLsaLogonProcessHandle LsaHandle);
+
+    [DllImport("secur32.dll", SetLastError = false)]
+    public static extern WinStatusCodes LsaConnectUntrusted([Out] out IntPtr LsaHandle);
+
+    [System.Security.SecurityCritical]  // auto-generated
+    internal sealed class SafeLsaLogonProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
+    {
+        private SafeLsaLogonProcessHandle() : base(true) { }
+
+        // 0 is an Invalid Handle
+        internal SafeLsaLogonProcessHandle(IntPtr handle) : base(true)
+        {
+            SetHandle(handle);
+        }
+
+        internal static SafeLsaLogonProcessHandle InvalidHandle
+        {
+            get { return new SafeLsaLogonProcessHandle(IntPtr.Zero); }
+        }
+
+        [System.Security.SecurityCritical]
+        override protected bool ReleaseHandle()
+        {
+            // LsaDeregisterLogonProcess returns an NTSTATUS
+            return LsaDeregisterLogonProcess(handle) >= 0;
+        }
+    }
+
+    [DllImport("secur32.dll", SetLastError = true)]
+    [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+    [ResourceExposure(ResourceScope.None)]
+    internal static extern int LsaDeregisterLogonProcess(IntPtr handle);
+
 
     public static void CreateNewSession()
     {
@@ -319,7 +360,8 @@ public static class SECUR32
         IntPtr hLogonProc = Marshal.AllocHGlobal(Marshal.SizeOf(logonProc));
         Marshal.StructureToPtr(logonProc, hLogonProc, false);
         ADVAPI32.AllocateLocallyUniqueId(out pluid);
-        SECUR32.LsaRegisterLogonProcess(hLogonProc, out lsaHan, out secMode);
+        LsaConnectUntrusted(out lsaHan);
+        //SECUR32.LsaRegisterLogonProcess(hLogonProc, out lsaHan, out secMode);
         SECUR32.LsaLookupAuthenticationPackage(lsaHan, ref authPackage, out authPackID);
 
         kerbLogInfo = Marshal.AllocHGlobal(Marshal.SizeOf(kli));

@@ -27,13 +27,12 @@ namespace InstaTech_Service
             }
             else if (args.Exists(str=>str.ToLower() == "-install"))
             {
-                var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + @"\InstaTech\");
+                var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + @"\InstaTech\");
                 try
                 {
                     File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location), true);
                 }
                 catch { }
-
                 ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
                 InstallContext Context = new InstallContext("", new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location)});
                 ServiceInstallerObj.Context = Context;
@@ -52,7 +51,10 @@ namespace InstaTech_Service
                 {
                     serv.Start();
                 }
-                Process.Start("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
+                var psi = new ProcessStartInfo("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
+                psi.CreateNoWindow = false;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+                Process.Start(psi);
             }
             else if (args.Exists(str => str.ToLower() == "-uninstall"))
             {

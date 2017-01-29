@@ -109,11 +109,20 @@ namespace Win32_Classes
         public const int TOKEN_DUPLICATE = 0x0002;
         public const uint MAXIMUM_ALLOWED = 0x2000000;
         public const int CREATE_NEW_CONSOLE = 0x00000010;
+        public const int TOKEN_ALL_ACCESS = 0x000f01ff;
+        public const int PROCESS_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFF;
+        public const int STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+        public const int SYNCHRONIZE = 0x00100000;
 
         public const int IDLE_PRIORITY_CLASS = 0x40;
         public const int NORMAL_PRIORITY_CLASS = 0x20;
         public const int HIGH_PRIORITY_CLASS = 0x80;
         public const int REALTIME_PRIORITY_CLASS = 0x100;
+        public const UInt32 SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x00000001;
+        public const UInt32 SE_PRIVILEGE_ENABLED = 0x00000002;
+        public const UInt32 SE_PRIVILEGE_REMOVED = 0x00000004;
+        public const UInt32 SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000;
+        public const Int32 ANYSIZE_ARRAY = 1;
         #endregion
 
         #region DLL Imports
@@ -158,12 +167,17 @@ namespace Win32_Classes
 
         [DllImport("advapi32", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         public static extern bool OpenProcessToken(IntPtr ProcessHandle, int DesiredAccess, ref IntPtr TokenHandle);
-        [DllImport("advapi32.dll", EntryPoint = "DuplicateTokenEx")]
-        public extern static bool DuplicateTokenEx(IntPtr ExistingTokenHandle, uint dwDesiredAccess,
-            ref SECURITY_ATTRIBUTES lpThreadAttributes, int TokenType,
-            int ImpersonationLevel, ref IntPtr DuplicateTokenHandle);
+        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public extern static bool DuplicateTokenEx(
+            IntPtr hExistingToken,
+            uint dwDesiredAccess,
+            ref SECURITY_ATTRIBUTES lpTokenAttributes,
+            SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
+            TOKEN_TYPE TokenType,
+            out IntPtr phNewToken);
 
-
+        [DllImport("advapi32.dll", SetLastError = false)]
+        public static extern uint LsaNtStatusToWinError(uint status);
         #endregion
 
         public static bool OpenProcessAsSystem(string applicationName, out PROCESS_INFORMATION procInfo)
@@ -175,7 +189,7 @@ namespace Win32_Classes
                 IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
                 procInfo = new PROCESS_INFORMATION();
 
-                // obtain the currently active session id; every logged on user in the system has a unique session id
+                // Obtain session ID for active session.
                 uint dwSessionId = Kernel32.WTSGetActiveConsoleSessionId();
 
                 // Check for RDP session.  If active, use that session ID instead.
@@ -184,8 +198,8 @@ namespace Win32_Classes
                 {
                     dwSessionId = rdpSessionID;
                 }
-                
-                // obtain the process id of the winlogon process that is running within the currently active session
+
+                // Obtain the process ID of the winlogon process that is running within the currently active session.
                 Process[] processes = Process.GetProcessesByName("winlogon");
                 foreach (Process p in processes)
                 {
@@ -195,39 +209,35 @@ namespace Win32_Classes
                     }
                 }
 
-                // obtain a handle to the winlogon process
+                // Obtain a handle to the winlogon process.
                 hProcess = Kernel32.OpenProcess(MAXIMUM_ALLOWED, false, winlogonPid);
 
-                // obtain a handle to the access token of the winlogon process
+                // Obtain a handle to the access token of the winlogon process.
                 if (!OpenProcessToken(hProcess, TOKEN_DUPLICATE, ref hPToken))
                 {
                     Kernel32.CloseHandle(hProcess);
                     return false;
                 }
 
-                // Security attibute structure used in DuplicateTokenEx and CreateProcessAsUser
-                // I would prefer to not have to use a security attribute variable and to just 
-                // simply pass null and inherit (by default) the security attributes
-                // of the existing token. However, in C# structures are value types and therefore
-                // cannot be assigned the null value.
+                // Security attibute structure used in DuplicateTokenEx and CreateProcessAsUser.
                 SECURITY_ATTRIBUTES sa = new SECURITY_ATTRIBUTES();
                 sa.Length = Marshal.SizeOf(sa);
 
-                // copy the access token of the winlogon process; the newly created token will be a primary token
-                if (!DuplicateTokenEx(hPToken, MAXIMUM_ALLOWED, ref sa, (int)SECURITY_IMPERSONATION_LEVEL.SecurityIdentification, (int)TOKEN_TYPE.TokenPrimary, ref hUserTokenDup))
+                // Copy the access token of the winlogon process; the newly created token will be a primary token.
+                if (!DuplicateTokenEx(hPToken, MAXIMUM_ALLOWED, ref sa, SECURITY_IMPERSONATION_LEVEL.SecurityIdentification, TOKEN_TYPE.TokenPrimary, out hUserTokenDup))
                 {
                     Kernel32.CloseHandle(hProcess);
                     Kernel32.CloseHandle(hPToken);
                     return false;
                 }
 
-                // By default CreateProcessAsUser creates a process on a non-interactive window station, meaning
+                // By default, CreateProcessAsUser creates a process on a non-interactive window station, meaning
                 // the window station has a desktop that is invisible and the process is incapable of receiving
                 // user input. To remedy this we set the lpDesktop parameter to indicate we want to enable user 
                 // interaction with the new process.
                 STARTUPINFO si = new STARTUPINFO();
                 si.cb = (int)Marshal.SizeOf(si);
-                si.lpDesktop = @"winsta0\default"; // interactive window station parameter; basically this indicates that the process created can display a GUI on the desktop
+                si.lpDesktop = @"WinSta0\Default"; // interactive window station parameter; basically this indicates that the process created can display a GUI on the desktop
 
                 // flags that specify the priority and creation method of the process
                 uint dwCreationFlags = NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE;
