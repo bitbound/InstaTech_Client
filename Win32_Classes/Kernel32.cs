@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Win32_Classes
 {
-    class Kernel32
+    public static class Kernel32
     {
         #region DLL Imports
 

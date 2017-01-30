@@ -1199,7 +1199,7 @@ namespace Win32_Classes
         // *** Public User-Defined Methods *** //
         public static IntPtr OpenInputDesktop()
         {
-            return OpenInputDesktop(0, true, ACCESS_MASK.READ_CONTROL);
+            return OpenInputDesktop(0, false, ACCESS_MASK.GENERIC_ALL);
         }
         public static void SendLeftMouseDown(int x, int y)
         {

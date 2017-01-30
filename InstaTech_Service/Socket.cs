@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Win32_Classes;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
+using System.Diagnostics;
 
 namespace InstaTech_Service
 {
@@ -66,7 +67,12 @@ namespace InstaTech_Service
             graphic = Graphics.FromImage(screenshot);
 
             // Clean up temp files from previous file transfers.
-            var di = new DirectoryInfo(Path.GetTempPath() + @"\InstaTech");
+            var path = System.IO.Path.GetTempPath() + @"\InstaTech\";
+            if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\";
+            }
+            var di = new DirectoryInfo(path);
             if (di.Exists)
             {
                 di.Delete(true);
@@ -81,15 +87,14 @@ namespace InstaTech_Service
                 ConnectionType = "ClientConsole",
                 ComputerName = Environment.MachineName
             };
-            var strRequest = JsonConvert.SerializeObject(request);
-            var buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-            await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            await SocketSend(request);
             await handleInteractiveSocket();
         }
 
 
         public static async void StartService()
         {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             await initWebSocket();
             // Send notification to server that this connection is for a client app.
             var request = new
@@ -98,9 +103,7 @@ namespace InstaTech_Service
                 ConnectionType = "ClientService",
                 ComputerName = Environment.MachineName
             };
-            var strRequest = JsonConvert.SerializeObject(request);
-            var buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-            await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            await SocketSend(request);
             handleServiceSocket();
         }
 
@@ -112,7 +115,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToErrorLog(ex);
                 return;
             }
             try
@@ -121,14 +124,14 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToErrorLog(ex);
                 return;
             }
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            writeToErrorLog(e.ExceptionObject as Exception);
+            WriteToErrorLog(e.ExceptionObject as Exception);
         }
         static private async Task handleInteractiveSocket()
         {
@@ -137,7 +140,7 @@ namespace InstaTech_Service
                 ArraySegment<byte> buffer;
                 WebSocketReceiveResult result;
                 string trimmedString = "";
-                dynamic jsonMessage = new { };
+                dynamic jsonMessage = null;
                 while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
@@ -158,9 +161,7 @@ namespace InstaTech_Service
                                     Type = "RTCOffer",
                                     ConnectionType = "Denied",
                                 };
-                                var strRequest = JsonConvert.SerializeObject(request);
-                                var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                                await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                                await SocketSend(request);
                                 break;
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
@@ -177,7 +178,12 @@ namespace InstaTech_Service
                                 var strResult = await httpResult.Content.ReadAsStringAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
                                 var byteFileData = Convert.FromBase64String(strResult);
-                                var di = Directory.CreateDirectory(System.IO.Path.GetTempPath() + @"\InstaTech\");
+                                var path = System.IO.Path.GetTempPath() + @"\InstaTech\";
+                                if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+                                {
+                                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\";
+                                }
+                                var di = Directory.CreateDirectory(path);
                                 File.WriteAllBytes(di.FullName + strFileName, byteFileData);
                                 break;
                             case "SendClipboard":
@@ -186,6 +192,7 @@ namespace InstaTech_Service
                                 break;
                             case "MouseMove":
                                 User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
+                                // Alternate method.
                                 //User32.SetCursorPos((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 break;
                             case "MouseDown":
@@ -268,7 +275,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToErrorLog(ex);
                 Application.Exit();
             }
         }
@@ -280,7 +287,7 @@ namespace InstaTech_Service
                 ArraySegment<byte> buffer;
                 WebSocketReceiveResult result;
                 string trimmedString = "";
-                dynamic jsonMessage = new { };
+                dynamic jsonMessage = null;
                 while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
@@ -289,7 +296,7 @@ namespace InstaTech_Service
                     {
                         trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
-                        
+
                         switch ((string)jsonMessage.Type)
                         {
                             case "ConnectUnattended":
@@ -302,9 +309,8 @@ namespace InstaTech_Service
                                         proc.Kill();
                                     }
                                 }
-
                                 var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                                var processResult = ADVAPI32.OpenProcessAsSystem(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", out procInfo);
+                                var processResult = ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", "default", out procInfo);
                                 if (processResult == false)
                                 {
                                     var response = new
@@ -312,10 +318,8 @@ namespace InstaTech_Service
                                         Type = "ProcessStartResult",
                                         Status = "failed"
                                     };
-                                    var strRequest = JsonConvert.SerializeObject(response);
-                                    var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                                    await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
-                                    writeToErrorLog(new Exception("Error opening interactive process.  Error Code: " + Marshal.GetLastWin32Error().ToString()));
+                                    await SocketSend(response);
+                                    WriteToErrorLog(new Exception("Error opening interactive process.  Error Code: " + Marshal.GetLastWin32Error().ToString()));
                                 }
                                 else
                                 {
@@ -324,13 +328,11 @@ namespace InstaTech_Service
                                         Type = "ProcessStartResult",
                                         Status = "ok"
                                     };
-                                    var strRequest = JsonConvert.SerializeObject(response);
-                                    var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                                    await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                                    await SocketSend(response);
                                 }
                                 break;
                             case "ServiceDuplicate":
-                                writeToErrorLog(new Exception("Service is already running on another computer with the same name."));
+                                WriteToErrorLog(new Exception("Service is already running on another computer with the same name."));
                                 break;
                             case "Uninstall":
                                 System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall");
@@ -343,7 +345,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToErrorLog(ex);
                 throw ex;
             }
         }
@@ -387,33 +389,45 @@ namespace InstaTech_Service
 
             try
             {
-                //var station = User32.OpenWindowStation("WinSta0", true, User32.ACCESS_MASK.MAXIMUM_ALLOWED);
-                //var result = User32.SetProcessWindowStation(station.DangerousGetHandle());
                 var hWnd = User32.GetDesktopWindow();
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
                 var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
-                // Change to input desktop if copy fails.
+                // Switch desktop if copy fails.
                 if (!copyResult)
                 {
+                    graphic.ReleaseHdc(graphDC);
+                    User32.ReleaseDC(hWnd, hDC);
+                    WriteToErrorLog(new Exception("Desktop switch initiated."));
                     var inputDesktop = User32.OpenInputDesktop();
-                    if (User32.SetThreadDesktop(inputDesktop) == false)
-                    {
-                        var error = Marshal.GetLastWin32Error();
-                        writeToErrorLog(new Exception("Failed to open input desktop.  Error: " + error.ToString()));
-                    }
-                    var dw = User32.GetDesktopWindow();
-                    User32.SetActiveWindow(dw);
-                    User32.SetForegroundWindow(dw);
+                    byte[] deskBytes = new byte[24];
+                    uint lenNeeded;
+                    ADVAPI32.GetUserObjectInformation(inputDesktop, ADVAPI32.UOI_NAME, deskBytes, 24, out lenNeeded);
+                    var deskName = Encoding.UTF8.GetString(trimBytes(deskBytes));
                     User32.CloseDesktop(inputDesktop);
+                    var procInfo = new ADVAPI32.PROCESS_INFORMATION();
+                    if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
+                    {
+                        var request = new
+                        {
+                            Type = "DesktopSwitch",
+                            Status = "pending",
+                            ComputerName = Environment.MachineName
+                        };
+                        await SocketSend(request);
+                        capturing = false;
+                    }
+                    else
+                    {
+                        graphic.Clear(System.Drawing.Color.White);
+                        var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                        graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                        var error = Marshal.GetLastWin32Error();
+                        WriteToErrorLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
+                    }
                 }
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
-                //IntPtr deskDC = GDI32.CreateDC("DISPLAY", null, null, IntPtr.Zero);
-                //var graphDC = graphic.GetHdc();
-                //GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, deskDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
-                //graphic.ReleaseHdc(graphDC);
-                //GDI32.DeleteDC(deskDC);
             }
             catch
             {
@@ -443,9 +457,7 @@ namespace InstaTech_Service
                         Width = totalWidth,
                         Height = totalHeight
                     };
-                    var strRequest = JsonConvert.SerializeObject(request);
-                    var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                    await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                    await SocketSend(request);
                     using (var ms = new MemoryStream())
                     {
                         screenshot.Save(ms, ImageFormat.Jpeg);
@@ -458,7 +470,7 @@ namespace InstaTech_Service
                         return;
                     }
                 }
-                newData = getChangedPixels(screenshot, lastFrame);
+                newData = GetChangedPixels(screenshot, lastFrame);
                 if (newData != null)
                 {
                     using (var ms = new MemoryStream())
@@ -475,13 +487,13 @@ namespace InstaTech_Service
                 }
                 lastFrame = (Bitmap)screenshot.Clone();
             }
-            catch
+            catch (Exception ex)
             {
-                capturing = false;
+                WriteToErrorLog(ex);
             }
         }
 
-        static private byte[] getChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
+        static private byte[] GetChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
         {
             if (bitmap1.Height != bitmap2.Height || bitmap1.Width != bitmap2.Width)
             {
@@ -573,7 +585,13 @@ namespace InstaTech_Service
                 return null;
             }
         }
-        private static void writeToErrorLog(Exception ex)
+        static private async Task SocketSend(dynamic Request)
+        {
+            var jsonRequest = JsonConvert.SerializeObject(Request);
+            var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
+            await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+        private static void WriteToErrorLog(Exception ex)
         {
             var exception = ex;
             while (ex != null)

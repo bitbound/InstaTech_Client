@@ -12,6 +12,12 @@ namespace Win32_Classes
     public static class ADVAPI32
     {
         #region Structs
+        public class USEROBJECTFLAGS
+        {
+            public int fInherit = 0;
+            public int fReserved = 0;
+            public int dwFlags = 0;
+        }
         [StructLayout(LayoutKind.Sequential)]
         public struct SECURITY_ATTRIBUTES
         {
@@ -52,6 +58,153 @@ namespace Win32_Classes
         #endregion
 
         #region Enums
+        public enum TOKEN_INFORMATION_CLASS
+        {
+            /// <summary>
+                /// The buffer receives a TOKEN_USER structure that contains the user account of the token.
+                /// </summary>
+            TokenUser = 1,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_GROUPS structure that contains the group accounts associated with the token.
+                /// </summary>
+            TokenGroups,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_PRIVILEGES structure that contains the privileges of the token.
+                /// </summary>
+            TokenPrivileges,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_OWNER structure that contains the default owner security identifier (SID) for newly created objects.
+                /// </summary>
+            TokenOwner,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_PRIMARY_GROUP structure that contains the default primary group SID for newly created objects.
+                /// </summary>
+            TokenPrimaryGroup,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_DEFAULT_DACL structure that contains the default DACL for newly created objects.
+                /// </summary>
+            TokenDefaultDacl,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_SOURCE structure that contains the source of the token. TOKEN_QUERY_SOURCE access is needed to retrieve this information.
+                /// </summary>
+            TokenSource,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_TYPE value that indicates whether the token is a primary or impersonation token.
+                /// </summary>
+            TokenType,
+
+            /// <summary>
+                /// The buffer receives a SECURITY_IMPERSONATION_LEVEL value that indicates the impersonation level of the token. If the access token is not an impersonation token, the function fails.
+                /// </summary>
+            TokenImpersonationLevel,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_STATISTICS structure that contains various token statistics.
+                /// </summary>
+            TokenStatistics,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_GROUPS structure that contains the list of restricting SIDs in a restricted token.
+                /// </summary>
+            TokenRestrictedSids,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that indicates the Terminal Services session identifier that is associated with the token. 
+                /// </summary>
+            TokenSessionId,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_GROUPS_AND_PRIVILEGES structure that contains the user SID, the group accounts, the restricted SIDs, and the authentication ID associated with the token.
+                /// </summary>
+            TokenGroupsAndPrivileges,
+
+            /// <summary>
+                /// Reserved.
+                /// </summary>
+            TokenSessionReference,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that is nonzero if the token includes the SANDBOX_INERT flag.
+                /// </summary>
+            TokenSandBoxInert,
+
+            /// <summary>
+                /// Reserved.
+                /// </summary>
+            TokenAuditPolicy,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_ORIGIN value. 
+                /// </summary>
+            TokenOrigin,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_ELEVATION_TYPE value that specifies the elevation level of the token.
+                /// </summary>
+            TokenElevationType,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_LINKED_TOKEN structure that contains a handle to another token that is linked to this token.
+                /// </summary>
+            TokenLinkedToken,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_ELEVATION structure that specifies whether the token is elevated.
+                /// </summary>
+            TokenElevation,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that is nonzero if the token has ever been filtered.
+                /// </summary>
+            TokenHasRestrictions,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_ACCESS_INFORMATION structure that specifies security information contained in the token.
+                /// </summary>
+            TokenAccessInformation,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that is nonzero if virtualization is allowed for the token.
+                /// </summary>
+            TokenVirtualizationAllowed,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that is nonzero if virtualization is enabled for the token.
+                /// </summary>
+            TokenVirtualizationEnabled,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_MANDATORY_LABEL structure that specifies the token's integrity level. 
+                /// </summary>
+            TokenIntegrityLevel,
+
+            /// <summary>
+                /// The buffer receives a DWORD value that is nonzero if the token has the UIAccess flag set.
+                /// </summary>
+            TokenUIAccess,
+
+            /// <summary>
+                /// The buffer receives a TOKEN_MANDATORY_POLICY structure that specifies the token's mandatory integrity policy.
+                /// </summary>
+            TokenMandatoryPolicy,
+
+            /// <summary>
+                /// The buffer receives the token's logon security identifier (SID).
+                /// </summary>
+            TokenLogonSid,
+
+            /// <summary>
+                /// The maximum value for this enumeration
+                /// </summary>
+            MaxTokenInfoClass
+        }
         public enum LOGON_TYPE
         {
             LOGON32_LOGON_INTERACTIVE = 2,
@@ -123,6 +276,13 @@ namespace Win32_Classes
         public const UInt32 SE_PRIVILEGE_REMOVED = 0x00000004;
         public const UInt32 SE_PRIVILEGE_USED_FOR_ACCESS = 0x80000000;
         public const Int32 ANYSIZE_ARRAY = 1;
+
+        public const int UOI_FLAGS = 1;
+        public const int UOI_NAME = 2;
+        public const int UOI_TYPE = 3;
+        public const int UOI_USER_SID = 4;
+        public const int UOI_HEAPSIZE = 5;
+        public const int UOI_IO = 6;
         #endregion
 
         #region DLL Imports
@@ -178,13 +338,16 @@ namespace Win32_Classes
 
         [DllImport("advapi32.dll", SetLastError = false)]
         public static extern uint LsaNtStatusToWinError(uint status);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool GetUserObjectInformation(IntPtr hObj, int nIndex,
+             [Out] byte[] pvInfo, uint nLength, out uint lpnLengthNeeded);
         #endregion
 
-        public static bool OpenProcessAsSystem(string applicationName, out PROCESS_INFORMATION procInfo)
+        public static bool OpenInteractiveProcess(string applicationName, string desktopName, out PROCESS_INFORMATION procInfo)
         {
             try
             {
-
                 uint winlogonPid = 0;
                 IntPtr hUserTokenDup = IntPtr.Zero, hPToken = IntPtr.Zero, hProcess = IntPtr.Zero;
                 procInfo = new PROCESS_INFORMATION();
@@ -237,24 +400,13 @@ namespace Win32_Classes
                 // interaction with the new process.
                 STARTUPINFO si = new STARTUPINFO();
                 si.cb = (int)Marshal.SizeOf(si);
-                si.lpDesktop = @"WinSta0\Default"; // interactive window station parameter; basically this indicates that the process created can display a GUI on the desktop
+                si.lpDesktop = @"winsta0\" + desktopName;
 
                 // flags that specify the priority and creation method of the process
                 uint dwCreationFlags = NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE;
 
                 // create a new process in the current user's logon session
-                bool result = CreateProcessAsUser(hUserTokenDup,        // client's access token
-                                                null,                   // file to execute
-                                                applicationName,        // command line
-                                                ref sa,                 // pointer to process SECURITY_ATTRIBUTES
-                                                ref sa,                 // pointer to thread SECURITY_ATTRIBUTES
-                                                false,                  // handles are not inheritable
-                                                dwCreationFlags,        // creation flags
-                                                IntPtr.Zero,            // pointer to new environment block 
-                                                null,                   // name of current directory 
-                                                ref si,                 // pointer to STARTUPINFO structure
-                                                out procInfo            // receives information about new process
-                                                );
+                bool result = CreateProcessAsUser(hUserTokenDup, null, applicationName, ref sa, ref sa, false, dwCreationFlags, IntPtr.Zero, null, ref si, out procInfo);
 
                 // invalidate the handles
                 Kernel32.CloseHandle(hProcess);

@@ -69,9 +69,6 @@ namespace InstaTech_Client
         int offsetY = 0;
         System.Drawing.Point cursorPos;
         bool sendFullScreenshot = true;
-        IntPtr deskDC = GDI32.CreateDC("DISPLAY", null, null, IntPtr.Zero);
-        List<dynamic> mouseMoveStack = new List<dynamic>();
-        List<dynamic> touchMoveStack = new List<dynamic>();
 
         public MainWindow()
         {
@@ -301,7 +298,7 @@ namespace InstaTech_Client
                 ArraySegment<byte> buffer;
                 WebSocketReceiveResult result;
                 string trimmedString = "";
-                dynamic jsonMessage = new { };
+                dynamic jsonMessage = null;
                 while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
@@ -310,7 +307,11 @@ namespace InstaTech_Client
                     {
                         trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
-                        
+                        while (jsonMessage.GetType() == typeof(string))
+                        {
+                            jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
+                        }
+
                         switch ((string)jsonMessage.Type)
                         {
                             case "SessionID":
@@ -499,7 +500,13 @@ namespace InstaTech_Client
                 var hWnd = User32.GetDesktopWindow();
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
-                GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                if (!copyResult)
+                {
+                    graphic.Clear(System.Drawing.Color.White);
+                    var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                    graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                }
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
             }
