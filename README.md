@@ -15,6 +15,7 @@ A self-installing Windows service that will listen for connections and launch th
 **Switches**
    * -install = Installs the service and begins listening for connections.
    * -uninstall = Uninstalls the service.
+   * -update = Reinstalls the service.
    * -interactive = Launches an interactive process in the logged-on user's sessions.
 
 ### Cross-Platform Client (/InstaTech_CP/)
