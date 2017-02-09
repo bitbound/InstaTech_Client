@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26020.0
+VisualStudioVersion = 15.0.26127.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstaTech Client", "InstaTech Client\InstaTech Client.csproj", "{A9AE81EC-9496-4B7E-8C28-643E00E911B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstaTech_Client", "InstaTech_Client\InstaTech_Client.csproj", "{A9AE81EC-9496-4B7E-8C28-643E00E911B1}"
 EndProject
-Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "InstaTech CP", "InstaTech CP\InstaTech CP.njsproj", "{5F6A5988-A1F0-4C6E-A495-06BB0A58F408}"
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "InstaTech_CP", "InstaTech_CP\InstaTech_CP.njsproj", "{5F6A5988-A1F0-4C6E-A495-06BB0A58F408}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Win32_Classes", "Win32_Classes\Win32_Classes.csproj", "{2A120F3C-0F03-4388-A686-1D09298987FC}"
 EndProject

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define Test
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,7 +22,6 @@ using System.Threading;
 using System.IO;
 using Newtonsoft.Json;
 using System.Drawing.Imaging;
-using WinCursor = System.Windows.Forms.Cursor;
 using System.Windows.Media.Animation;
 using System.Net;
 using System.Net.Http;
@@ -37,18 +37,24 @@ namespace InstaTech_Client
         public static MainWindow Current { get; set; }
 
         // ***  Config: Change these variables for your environment.  *** //
-        string downloadURI = "https://instatech.org/Demo/Downloads/InstaTech Client.exe";
-        string versionURI = "https://instatech.org/Demo/Services/Get_Win_Client_Version.cshtml";
-#if DEBUG
-        string socketPath = "ws://localhost:52422/Services/Remote_Control_Socket.cshtml";
-#else
-        string socketPath = "wss://instatech.org/Demo/Services/Remote_Control_Socket.cshtml";
+#if Deploy    
+        const string hostName = "";
+#elif Test
+        const string hostName = "test.instatech.org";
+#elif DEBUG
+        const string hostName = "localhost:52422";
+#elif !DEBUG
+        const string hostName = "demo.instatech.org";
 #endif
-#if DEBUG
-        string fileTransferURI = "http://localhost:52422/Services/FileTransfer.cshtml";
+#if DEBUG && !Test
+        const string socketPath = "ws://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 #else
-        string fileTransferURI = "https://instatech.org/Demo/Services/FileTransfer.cshtml";
+        const string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 #endif
+
+        const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
+        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech Client.exe";
+        const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
 
         // ***  Variables  *** //
         ClientWebSocket socket { get; set; }
@@ -121,7 +127,7 @@ namespace InstaTech_Client
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             e.Handled = true;
-            writeToErrorLog(e.Exception);
+            WriteToLog(e.Exception);
             System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  If the issue persists, please contact the developer.", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
             // *** Example of additional error handling. *** //
             //var result = System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  Can we submit this error to the developer?  No personal information will be sent.", "Application Error", MessageBoxButton.YesNo, MessageBoxImage.Error);
@@ -183,7 +189,7 @@ namespace InstaTech_Client
             var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
             if (di.Exists)
             {
-                System.Diagnostics.Process.Start("explorer.exe", di.FullName);
+                Process.Start("explorer.exe", di.FullName);
             }
             else
             {
@@ -229,7 +235,7 @@ namespace InstaTech_Client
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToLog(ex);
                 System.Windows.MessageBox.Show("Unable to create web socket.", "Web Sockets Not Supported", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -239,7 +245,7 @@ namespace InstaTech_Client
             }
             catch (Exception ex)
             {
-                writeToErrorLog(ex);
+                WriteToLog(ex);
                 System.Windows.MessageBox.Show("Unable to connect to server.", "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -249,9 +255,7 @@ namespace InstaTech_Client
                 Type = "ConnectionType",
                 ConnectionType = "ClientApp",
             };
-            var strRequest = JsonConvert.SerializeObject(request);
-            var buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-            await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            await socketSend(request);
             handleSocket();
         }
         private void checkArgs(string[] args)
@@ -307,10 +311,6 @@ namespace InstaTech_Client
                     {
                         trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
-                        while (jsonMessage.GetType() == typeof(string))
-                        {
-                            jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
-                        }
 
                         switch ((string)jsonMessage.Type)
                         {
@@ -328,9 +328,7 @@ namespace InstaTech_Client
                                     Type = "RTCOffer",
                                     ConnectionType = "Denied",
                                 };
-                                var strRequest = JsonConvert.SerializeObject(request);
-                                var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                                await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                                await socketSend(request);
                                 break;
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
@@ -358,27 +356,30 @@ namespace InstaTech_Client
                                 showToolTip(buttonMenu, "Clipboard data set.", Colors.Green);
                                 break;
                             case "MouseMove":
-                                User32.SetCursorPos((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 break;
                             case "MouseUp":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
+                                break;
+                            case "MouseWheel":
+                                User32.SendMouseWheel((int)Math.Round((double)jsonMessage.DeltaY * -1));
                                 break;
                             case "TouchMove":
                                 User32.GetCursorPos(out cursorPos);
@@ -386,44 +387,58 @@ namespace InstaTech_Client
                                 break;
                             case "Tap":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "TouchDown":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "LongPress":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
+                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "TouchUp":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "KeyPress":
                                 try
                                 {
                                     string baseKey = jsonMessage.Key;
-                                    string prefix = "";
-                                    while (baseKey.FirstOrDefault() == '+' || baseKey.FirstOrDefault() == '^' || baseKey.FirstOrDefault() == '%')
+                                    string modifier = "";
+                                    if (jsonMessage.Modifers != null)
                                     {
-                                        prefix += baseKey.FirstOrDefault().ToString();
-                                        baseKey = baseKey.Substring(1);
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Alt"))
+                                        {
+                                            modifier += "%";
+                                        }
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Control"))
+                                        {
+                                            modifier += "^";
+                                        }
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Shift"))
+                                        {
+                                            modifier += "+";
+                                        }
                                     }
                                     if (baseKey.Length > 1)
                                     {
                                         baseKey = baseKey.Replace("Arrow", "");
                                         baseKey = baseKey.Replace("PageDown", "PGDN");
                                         baseKey = baseKey.Replace("PageUp", "PGUP");
-                                        baseKey = "{" + baseKey + "}";
+                                        if (!baseKey.StartsWith("{") && !baseKey.EndsWith("}"))
+                                        {
+                                            baseKey = "{" + baseKey + "}";
+                                        }
                                     }
-                                    SendKeys.SendWait(prefix + baseKey);
+                                    SendKeys.SendWait(modifier + baseKey);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    // TODO: Report missing keybind.
+                                    WriteToLog(ex);
+                                    WriteToLog("Missing keybind for " + jsonMessage.Key);
                                 }
                                 break;
                             case "PartnerClose":
@@ -527,7 +542,7 @@ namespace InstaTech_Client
                 {
                     using (var icon = System.Drawing.Icon.FromHandle(ci.hCursor))
                     {
-                        graphic.DrawImage(icon.ToBitmap(), new System.Drawing.Rectangle(cursorPos.X - offsetX, cursorPos.Y - offsetY, WinCursor.Current.Size.Width, WinCursor.Current.Size.Height));
+                        graphic.DrawIcon(icon, (int)Math.Round(ci.ptScreenPos.x - (icon.Width * .25)), (int)Math.Round(ci.ptScreenPos.y - (icon.Height * .25)));
                     }
                 }
                 if (sendFullScreenshot)
@@ -538,9 +553,7 @@ namespace InstaTech_Client
                         Width = totalWidth,
                         Height = totalHeight
                     };
-                    var strRequest = JsonConvert.SerializeObject(request);
-                    var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(strRequest));
-                    await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                    await socketSend(request);
                     using (var ms = new MemoryStream())
                     {
                         screenshot.Save(ms, ImageFormat.Jpeg);
@@ -693,7 +706,7 @@ namespace InstaTech_Client
             var strCurrentVersion = await response.Content.ReadAsStringAsync();
             var thisVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             var currentVersion = Version.Parse(strCurrentVersion);
-            if (currentVersion > thisVersion)
+            if (currentVersion != thisVersion && currentVersion > new Version(0,0,0,0))
             {
                 var result = System.Windows.MessageBox.Show("A new version of InstaTech is available!  Would you like to download it now?  It's an instant and effortless process.", "New Version Available", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
@@ -712,9 +725,50 @@ namespace InstaTech_Client
                 }
             }
         }
-        private void writeToErrorLog(Exception ex)
+        private async Task socketSend(dynamic JsonRequest)
         {
-            File.AppendAllText(System.IO.Path.GetTempPath() + "InstaTech_Client_Errors.txt", DateTime.Now.ToString() + "\t" + ex.Message + "\t" + ex.StackTrace + Environment.NewLine);
+            var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
+            var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
+            await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+        private void WriteToLog(Exception ex)
+        {
+            var exception = ex;
+            var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
+            if (File.Exists(path))
+            {
+                var fi = new FileInfo(path);
+                while (fi.Length > 1000000)
+                {
+                    var content = File.ReadAllLines(path);
+                    File.WriteAllLines(path, content.Skip(10));
+                    fi = new FileInfo(path);
+                }
+            }
+            while (exception != null)
+            {
+                var jsonError = new
+                {
+                    Type = "Error",
+                    Timestamp = DateTime.Now.ToString(),
+                    Message = exception?.Message,
+                    Source = exception?.Source,
+                    StackTrace = exception?.StackTrace,
+                };
+                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
+                exception = exception.InnerException;
+            }
+        }
+        public static void WriteToLog(string Message)
+        {
+            var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
+            var jsoninfo = new
+            {
+                Type = "Info",
+                Timestamp = DateTime.Now.ToString(),
+                Message = Message
+            };
+            File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
         }
     }
 }

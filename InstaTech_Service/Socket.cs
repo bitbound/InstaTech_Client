@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define Test
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -14,24 +15,30 @@ using Win32_Classes;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using System.Net;
 
 namespace InstaTech_Service
 {
     public static class Socket
     {
         // ***  Config: Change these variables for your environment.  *** //
-        public static string downloadURI = "https://instatech.org/Demo/Downloads/InstaTech_Service.exe";
-        public static string versionURI = "https://instatech.org/Demo/Services/Get_Service_Version.cshtml";
-#if DEBUG
-        static string socketPath = "ws://localhost:52422/Services/Remote_Control_Socket.cshtml";
-#else
-        static string socketPath = "wss://instatech.org/Demo/Services/Remote_Control_Socket.cshtml";
+#if Deploy    
+        const string hostName = "";
+#elif Test
+        const string hostName = "test.instatech.org";
+#elif DEBUG
+        const string hostName = "localhost:52422";
+#elif !DEBUG
+        const string hostName = "demo.instatech.org";
 #endif
-#if DEBUG
-        static string fileTransferURI = "http://localhost:52422/Services/FileTransfer.cshtml";
+#if DEBUG && !Test
+        const string socketPath = "ws://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 #else
-        static string fileTransferURI = "https://instatech.org/Demo/Services/FileTransfer.cshtml";
+        const string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 #endif
+        const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
+        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech Client.exe";
+        const string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
         // ***  Variables  *** //
         static ClientWebSocket socket { get; set; }
@@ -52,6 +59,8 @@ namespace InstaTech_Service
         static int offsetY = 0;
         static Point cursorPos;
         static bool sendFullScreenshot = true;
+        static DateTime lastMessage = DateTime.Now;
+        static System.Timers.Timer idleTimer = new System.Timers.Timer(5000);
 
         public static async Task StartInteractive()
         {
@@ -77,10 +86,22 @@ namespace InstaTech_Service
             {
                 di.Delete(true);
             }
+            // Start idle timer.
+            idleTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs e) => {
+                if (DateTime.Now - lastMessage > TimeSpan.FromMinutes(5))
+                {
+                    SocketSend(new
+                    {
+                        Type = "IdleTimeout"
+                    }).Wait();
 
+                    socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Connection timed out.", CancellationToken.None).Wait();
+                }
+            };
+            idleTimer.Start();
             await initWebSocket();
 
-            // Send notification to server that this connection is for a client app.
+            // Send notification to server that this connection is for a client console app.
             var request = new
             {
                 Type = "ConnectionType",
@@ -96,7 +117,7 @@ namespace InstaTech_Service
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             await initWebSocket();
-            // Send notification to server that this connection is for a client app.
+            // Send notification to server that this connection is for a client service.
             var request = new
             {
                 Type = "ConnectionType",
@@ -115,7 +136,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                WriteToErrorLog(ex);
+                WriteToLog(ex);
                 return;
             }
             try
@@ -124,14 +145,14 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                WriteToErrorLog(ex);
+                WriteToLog(ex);
                 return;
             }
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            WriteToErrorLog(e.ExceptionObject as Exception);
+            WriteToLog(e.ExceptionObject as Exception);
         }
         static private async Task handleInteractiveSocket()
         {
@@ -145,6 +166,7 @@ namespace InstaTech_Service
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
                     result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+                    lastMessage = DateTime.Now;
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
@@ -153,6 +175,16 @@ namespace InstaTech_Service
                         switch ((string)jsonMessage.Type)
                         {
                             case "CaptureScreen":
+                                var thisProc = System.Diagnostics.Process.GetCurrentProcess();
+                                var allProcs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service").Where(proc=>proc.SessionId == Process.GetCurrentProcess().SessionId);
+                                foreach (var proc in allProcs)
+                                {
+                                    if (proc.Id != thisProc.Id)
+                                    {
+                                        proc.Kill();
+                                    }
+                                }
+                                await checkForUpdates();
                                 beginScreenCapture();
                                 break;
                             case "RTCOffer":
@@ -185,6 +217,7 @@ namespace InstaTech_Service
                                 }
                                 var di = Directory.CreateDirectory(path);
                                 File.WriteAllBytes(di.FullName + strFileName, byteFileData);
+                                Process.Start("explorer.exe", di.FullName);
                                 break;
                             case "SendClipboard":
                                 byte[] arrData = Convert.FromBase64String(jsonMessage.Data.ToString());
@@ -192,28 +225,29 @@ namespace InstaTech_Service
                                 break;
                             case "MouseMove":
                                 User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
-                                // Alternate method.
-                                //User32.SetCursorPos((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 break;
                             case "MouseUp":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0));
+                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
+                                break;
+                            case "MouseWheel":
+                                User32.SendMouseWheel((int)Math.Round((double)jsonMessage.DeltaY * -1));
                                 break;
                             case "TouchMove":
                                 User32.GetCursorPos(out cursorPos);
@@ -221,45 +255,68 @@ namespace InstaTech_Service
                                 break;
                             case "Tap":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "TouchDown":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "LongPress":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y);
-                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendRightMouseDown(cursorPos.X, cursorPos.Y, false, false, false);
+                                User32.SendRightMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "TouchUp":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y);
+                                User32.SendLeftMouseUp(cursorPos.X, cursorPos.Y, false, false, false);
                                 break;
                             case "KeyPress":
                                 try
                                 {
                                     string baseKey = jsonMessage.Key;
-                                    string prefix = "";
-                                    while (baseKey.FirstOrDefault() == '+' || baseKey.FirstOrDefault() == '^' || baseKey.FirstOrDefault() == '%')
+                                    string modifier = "";
+                                    if (jsonMessage.Modifers != null)
                                     {
-                                        prefix += baseKey.FirstOrDefault().ToString();
-                                        baseKey = baseKey.Substring(1);
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Alt"))
+                                        {
+                                            modifier += "%";
+                                        }
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Control"))
+                                        {
+                                            modifier += "^";
+                                        }
+                                        if ((jsonMessage.Modifiers as string[]).Contains("Shift"))
+                                        {
+                                            modifier += "+";
+                                        }
                                     }
                                     if (baseKey.Length > 1)
                                     {
                                         baseKey = baseKey.Replace("Arrow", "");
                                         baseKey = baseKey.Replace("PageDown", "PGDN");
                                         baseKey = baseKey.Replace("PageUp", "PGUP");
-                                        baseKey = "{" + baseKey + "}";
+                                        if (!baseKey.StartsWith("{") && !baseKey.EndsWith("}"))
+                                        {
+                                            baseKey = "{" + baseKey + "}";
+                                        }
                                     }
-                                    SendKeys.SendWait(prefix + baseKey);
+                                    SendKeys.SendWait(modifier + baseKey);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    // TODO: Report missing keybind.
+                                    WriteToLog(ex);
+                                    WriteToLog("Missing keybind for " + jsonMessage.Key);
                                 }
+                                break;
+                            case "CtrlAltDel":
+                                User32.SendSAS(false);
+                                break;
+                            case "UninstallService":
+                                WriteToLog("Service uninstall requested.");
+                                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall").WaitForExit();
+                                jsonMessage.Status = "ok";
+                                await SocketSend(jsonMessage);
                                 break;
                             case "PartnerClose":
                                 Application.Exit();
@@ -275,7 +332,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                WriteToErrorLog(ex);
+                WriteToLog(ex);
                 Application.Exit();
             }
         }
@@ -309,8 +366,9 @@ namespace InstaTech_Service
                                         proc.Kill();
                                     }
                                 }
+                                var deskName = User32.GetCurrentDesktop();
                                 var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                                var processResult = ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", "default", out procInfo);
+                                var processResult = ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo);
                                 if (processResult == false)
                                 {
                                     var response = new
@@ -319,7 +377,7 @@ namespace InstaTech_Service
                                         Status = "failed"
                                     };
                                     await SocketSend(response);
-                                    WriteToErrorLog(new Exception("Error opening interactive process.  Error Code: " + Marshal.GetLastWin32Error().ToString()));
+                                    WriteToLog(new Exception("Error opening interactive process.  Error Code: " + Marshal.GetLastWin32Error().ToString()));
                                 }
                                 else
                                 {
@@ -332,7 +390,10 @@ namespace InstaTech_Service
                                 }
                                 break;
                             case "ServiceDuplicate":
-                                WriteToErrorLog(new Exception("Service is already running on another computer with the same name."));
+                                WriteToLog(new Exception("Service is already running on another computer with the same name."));
+                                break;
+                            case "CtrlAltDel":
+                                User32.SendSAS(false);
                                 break;
                             case "Uninstall":
                                 System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall");
@@ -345,13 +406,13 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                WriteToErrorLog(ex);
+                WriteToLog(ex);
                 throw ex;
             }
         }
 
         // Remove trailing empty bytes in the buffer.
-        static private byte[] trimBytes(byte[] bytes)
+        static public byte[] trimBytes(byte[] bytes)
         {
             // Loop backwards through array until the first non-zero byte is found.
             var firstZero = 0;
@@ -398,13 +459,8 @@ namespace InstaTech_Service
                 {
                     graphic.ReleaseHdc(graphDC);
                     User32.ReleaseDC(hWnd, hDC);
-                    WriteToErrorLog(new Exception("Desktop switch initiated."));
-                    var inputDesktop = User32.OpenInputDesktop();
-                    byte[] deskBytes = new byte[24];
-                    uint lenNeeded;
-                    ADVAPI32.GetUserObjectInformation(inputDesktop, ADVAPI32.UOI_NAME, deskBytes, 24, out lenNeeded);
-                    var deskName = Encoding.UTF8.GetString(trimBytes(deskBytes));
-                    User32.CloseDesktop(inputDesktop);
+                    WriteToLog("Desktop switch initiated.");
+                    var deskName = User32.GetCurrentDesktop();
                     var procInfo = new ADVAPI32.PROCESS_INFORMATION();
                     if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
                     {
@@ -423,7 +479,7 @@ namespace InstaTech_Service
                         var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
                         graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
                         var error = Marshal.GetLastWin32Error();
-                        WriteToErrorLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
+                        WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
                     }
                 }
                 graphic.ReleaseHdc(graphDC);
@@ -431,8 +487,8 @@ namespace InstaTech_Service
             }
             catch
             {
-                graphic.Clear(System.Drawing.Color.White);
-                var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                graphic.Clear(Color.White);
+                var font = new Font(FontFamily.GenericSansSerif, 30, FontStyle.Bold);
                 graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
             }
             try
@@ -446,7 +502,7 @@ namespace InstaTech_Service
                 {
                     using (var icon = Icon.FromHandle(ci.hCursor))
                     {
-                        graphic.DrawImage(icon.ToBitmap(), new Rectangle(cursorPos.X - offsetX, cursorPos.Y - offsetY, Cursor.Current.Size.Width, Cursor.Current.Size.Height));
+                        graphic.DrawIcon(icon, (int)Math.Round(ci.ptScreenPos.x - (icon.Width * .25)), (int)Math.Round(ci.ptScreenPos.y - (icon.Height * .25)));
                     }
                 }
                 if (sendFullScreenshot)
@@ -489,7 +545,7 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                WriteToErrorLog(ex);
+                WriteToLog(ex);
             }
         }
 
@@ -585,25 +641,96 @@ namespace InstaTech_Service
                 return null;
             }
         }
-        static private async Task SocketSend(dynamic Request)
+        static private async Task SocketSend(dynamic JsonRequest)
         {
-            var jsonRequest = JsonConvert.SerializeObject(Request);
+            var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
-        private static void WriteToErrorLog(Exception ex)
+        public static void WriteToLog(Exception ex)
         {
             var exception = ex;
-            while (ex != null)
+            var path = System.IO.Path.GetTempPath() + "InstaTech_Service_Logs.txt";
+            while (exception != null)
             {
-                var path = System.IO.Path.GetTempPath() + "InstaTech_Service_Errors.txt";
+                var jsonError = new
+                {
+                    Type = "Error",
+                    Timestamp = DateTime.Now.ToString(),
+                    Message = exception?.Message,
+                    Source = exception?.Source,
+                    StackTrace = exception?.StackTrace,
+                };
                 if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Errors.txt";
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Logs.txt";
                 }
-                File.AppendAllText(path, DateTime.Now.ToString() + "\t" + ex.Message + "\t" + ex.StackTrace + Environment.NewLine);
-                ex = ex.InnerException;
+                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
+                exception = exception.InnerException;
             }
+        }
+        static private async Task checkForUpdates()
+        {
+            WebClient webClient = new WebClient();
+            HttpClient httpClient = new HttpClient();
+            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\");
+            var strFilePath = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\" + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            HttpResponseMessage response;
+            if (File.Exists(strFilePath))
+            {
+                File.Delete(strFilePath);
+            }
+            try
+            {
+                response = await httpClient.GetAsync(Socket.versionURI);
+
+            }
+            catch
+            {
+                return;
+            }
+            var strCurrentVersion = await response.Content.ReadAsStringAsync();
+            var thisVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            var currentVersion = Version.Parse(strCurrentVersion);
+            if (currentVersion != thisVersion && currentVersion > new Version(0, 0, 0, 0))
+            {
+                var request = new
+                {
+                    Type = "ClientUpdating",
+                };
+                await SocketSend(request);
+                Socket.WriteToLog("Update download initiated.");
+                await webClient.DownloadFileTaskAsync(new Uri(Socket.downloadURI), strFilePath);
+                Socket.WriteToLog("Download complete.  Launching file.");
+                Process.Start(strFilePath, "-update");
+                Environment.Exit(0);
+                return;
+            }
+        }
+        public static void WriteToLog(string Message)
+        {
+            var path = Path.GetTempPath() + "InstaTech_Service_Logs.txt";
+            if (File.Exists(path))
+            {
+                var fi = new FileInfo(path);
+                while (fi.Length > 1000000)
+                {
+                    var content = File.ReadAllLines(path);
+                    File.WriteAllLines(path, content.Skip(10));
+                    fi = new FileInfo(path);
+                }
+            }
+            var jsoninfo = new
+            {
+                Type = "Info",
+                Timestamp = DateTime.Now.ToString(),
+                Message = Message
+            };
+            if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+            {
+                path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Logs.txt";
+            }
+            File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
         }
     }
 }

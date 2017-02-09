@@ -1,7 +1,15 @@
 ﻿window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
     var os = require("os");
-    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Errors.txt", new Date().toString() + "\t" +  message + "\r\n");
+    var jsonError = {
+        "Type": "Error",
+        "Timestamp": new Date().toString(),
+        "Message": message,
+        "Source": source,
+        "StackTrace": "Line: " + lineno + " Col: " + colno,
+        "Error": error
+    };
+    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Logs.txt", JSON.stringify(jsonError) + "\r\n");
     // This is required to ignore random Electron renderer error.
     if (capturing && useWebSocket) {
         worker.webContents.executeJavaScript("getCapture()");
@@ -9,32 +17,15 @@
     }
 };
 
-// ***  Config: Change these variables for your environment.  *** //
-// global.debug is set in main.js.
+// ***  Config: hostName is set in main.js.  *** //
 
-// Websocket protocol.
-var wsProtocol;
-// HTTP protocol.
-var httpProtocol;
 // Server host name.
-var hostname;
+var hostName = require("electron").remote.getGlobal("hostName");
+
 // Websocket service path.
-var wsPath;
+var wsPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 // File transfer service path.
-var ftPath;
-if (require("electron").remote.getGlobal("debug")) {
-    wsProtocol = "ws://";
-    httpProtocol = "http://";
-    hostname = "localhost:52422";
-    wsPath = "/Services/Remote_Control_Socket.cshtml";
-    ftPath = "/Services/FileTransfer.cshtml";
-} else {
-    wsProtocol = "wss://";
-    httpProtocol = "https://";
-    hostname = "instatech.org";
-    wsPath = "/Demo/Services/Remote_Control_Socket.cshtml";
-    ftPath = "/Demo/Services/FileTransfer.cshtml";
-}
+var ftPath = "https://" + hostName + "/Services/File_Transfer.cshtml";
 
 const robot = require("robotjs");
 const electron = require('electron');
@@ -58,7 +49,7 @@ var useWebSocket = false;
 var offsetX = 0;
 var offsetY = 0;
 function openWebSocket() {
-    socket = new WebSocket(wsProtocol + hostname + wsPath);
+    socket = new WebSocket(wsPath);
     socket.onopen = function (e) {
         var request = {
             "Type": "ConnectionType",
@@ -145,13 +136,12 @@ function openWebSocket() {
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
                     fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
                 };
-                var strPath = httpProtocol + hostname + ftPath;
                 var retrievalCode = jsonMessage.RetrievalCode;
                 var request = {
                     "Type": "Download",
                     "RetrievalCode": retrievalCode
                 };
-                $.post(strPath, JSON.stringify(request), function (data) {
+                $.post(ftPath, JSON.stringify(request), function (data) {
                     fs.writeFileSync(os.tmpdir() + "\\InstaTech\\" + jsonMessage.FileName, buf.Buffer.from(data, "base64"));
                     $("#inputFilesTransferred").val(fs.readdirSync(os.tmpdir() + "\\InstaTech\\").length);
                     showTooltip($("#inputFilesTransferred"), "left", "black", "File downloaded.");
@@ -170,20 +160,63 @@ function openWebSocket() {
                 break;
             case "MouseDown":
                 robot.moveMouse(Math.round(jsonMessage.PointX * totalWidth + offsetX), Math.round(jsonMessage.PointY * totalHeight + offsetY));
+                // Modifier down.
+                if (jsonMessage.Alt)
+                {
+                    robot.keyToggle("alt", "down");
+                }
+                else if (jsonMessage.Ctrl) {
+                    robot.keyToggle("control", "down");
+                }
+                else if (jsonMessage.Shift) {
+                    robot.keyToggle("shift", "down");
+                }
+                // Mouse down.
                 if (jsonMessage.Button == "Left") {
                     robot.mouseToggle("down", "left");
                 }
                 else if (jsonMessage.Button == "Right") {
                     robot.mouseToggle("down", "right");
                 }
+                // Modifier up.
+                if (jsonMessage.Alt) {
+                    robot.keyToggle("alt", "up");
+                }
+                else if (jsonMessage.Ctrl) {
+                    robot.keyToggle("control", "up");
+                }
+                else if (jsonMessage.Shift) {
+                    robot.keyToggle("shift", "up");
+                }
                 break;
             case "MouseUp":
                 robot.moveMouse(Math.round(jsonMessage.PointX * totalWidth + offsetX), Math.round(jsonMessage.PointY * totalHeight + offsetY));
+                // Modifier down.
+                if (jsonMessage.Alt) {
+                    robot.keyToggle("alt", "down");
+                }
+                else if (jsonMessage.Ctrl) {
+                    robot.keyToggle("control", "down");
+                }
+                else if (jsonMessage.Shift) {
+                    robot.keyToggle("shift", "down");
+                }
+                // Mouse up.
                 if (jsonMessage.Button == "Left") {
                     robot.mouseToggle("up", "left");
                 }
                 else if (jsonMessage.Button == "Right") {
                     robot.mouseToggle("up", "right");
+                }
+                // Modifier up.
+                if (jsonMessage.Alt) {
+                    robot.keyToggle("alt", "up");
+                }
+                else if (jsonMessage.Ctrl) {
+                    robot.keyToggle("control", "up");
+                }
+                else if (jsonMessage.Shift) {
+                    robot.keyToggle("shift", "up");
                 }
                 break;
             case "TouchMove":
@@ -204,15 +237,18 @@ function openWebSocket() {
                 break;
             case "KeyPress":
                 try {
-                    var baseKey = jsonMessage.Key;
-                    var modifiers = [];
-                    // Separate base key from modifiers (shift, control, alt).
-                    while (baseKey.startsWith('+') || baseKey.startsWith('^') || baseKey.startsWith('%')) {
-                        modifiers.push(baseKey.charAt(0).replace("+", "shift").replace("^", "control").replace("%", "alt"));
-                        baseKey = baseKey.slice(1);
+                    var baseKey = jsonMessage.Key.toLowerCase();
+                    if (baseKey.startsWith("{"))
+                    {
+                        baseKey = baseKey.slice(0);
                     }
+                    if (baseKey.endsWith("}"))
+                    {
+                        baseKey = baseKey.slice(0), baseKey.length - 1;
+                    }
+                    var modifiers = json.Modifiers;
+
                     // Rename base key for RobotJS syntax.
-                    baseKey = baseKey.toLowerCase();
                     if (baseKey.length > 1) {
                         baseKey = baseKey.replace("arrow", "");
                         baseKey = baseKey.replace("ctrl", "control");
@@ -221,7 +257,8 @@ function openWebSocket() {
                 }
                 catch (ex)
                 {
-                    // TODO: Report missing keybind.
+                    var fs = require("fs");
+                    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Logs.txt", "Missing keybind for " + jsonMessage.Key + "\r\n");
                 }
                 break;
             case "PartnerClose":
@@ -293,10 +330,10 @@ function addRTCMedia() {
         video: {
             mandatory: {
                 chromeMediaSource: 'desktop',
-                minWidth: Math.round(totalWidth * videoQuality),
-                maxWidth: Math.round(totalWidth * videoQuality),
-                minHeight: Math.round(totalHeight * videoQuality),
-                maxHeight: Math.round(totalHeight * videoQuality),
+                minWidth: Math.round(totalWidth),
+                maxWidth: Math.round(totalWidth),
+                minHeight: Math.round(totalHeight),
+                maxHeight: Math.round(totalHeight),
             }
         }
     }, function (stream) {
@@ -378,6 +415,7 @@ function showTooltip(objPlacementTarget, strPlacementDirection, strColor, strMes
         "padding": "5px",
         "border": "1px solid dimgray",
         "font-size": ".8em",
+        "box-shadow": "10px 5px 5px rgba(0,0,0,.2)"
     });
     var rectPlacement = objPlacementTarget.getBoundingClientRect();
     switch (strPlacementDirection) {

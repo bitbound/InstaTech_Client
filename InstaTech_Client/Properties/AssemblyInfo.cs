@@ -8,7 +8,7 @@ using System.Windows;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("InstaTech Client")]
-[assembly: AssemblyDescription("A remote control application that is free for personal use.")]
+[assembly: AssemblyDescription("A remote control application for Windows.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Translucency")]
 [assembly: AssemblyProduct("InstaTech Client")]
@@ -51,5 +51,7 @@ using System.Windows;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.9.11.0")]
-[assembly: AssemblyFileVersion("0.9.11.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: Guid("2bc60324-c54e-46fb-acb7-415684a2e5cc")]
+

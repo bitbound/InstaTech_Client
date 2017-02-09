@@ -402,13 +402,13 @@ namespace Win32_Classes
                 si.cb = (int)Marshal.SizeOf(si);
                 si.lpDesktop = @"winsta0\" + desktopName;
 
-                // flags that specify the priority and creation method of the process
+                // Flags that specify the priority and creation method of the process.
                 uint dwCreationFlags = NORMAL_PRIORITY_CLASS | CREATE_NEW_CONSOLE;
 
-                // create a new process in the current user's logon session
+                // Create a new process in the current user's logon session.
                 bool result = CreateProcessAsUser(hUserTokenDup, null, applicationName, ref sa, ref sa, false, dwCreationFlags, IntPtr.Zero, null, ref si, out procInfo);
 
-                // invalidate the handles
+                // Invalidate the handles.
                 Kernel32.CloseHandle(hProcess);
                 Kernel32.CloseHandle(hPToken);
                 Kernel32.CloseHandle(hUserTokenDup);

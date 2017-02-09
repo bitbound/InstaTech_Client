@@ -1,7 +1,15 @@
 ﻿window.onerror = function (message, source, lineno, colno, error) {
     var fs = require("fs");
     var os = require("os");
-    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Errors.txt", new Date().toString() + "\t" + message + "\r\n");
+    var jsonError = {
+        "Type": "Error",
+        "Timestamp": new Date().toString(),
+        "Message": message,
+        "Source": source,
+        "StackTrace": "Line: " + lineno + " Col: " + colno,
+        "Error": error
+    };
+    fs.appendFile(os.tmpdir() + "/InstaTech_CP_Logs.txt", JSON.stringify(jsonError) + "\r\n");
     // This is required to ignore random Electron renderer error.
     mainWindow.webContents.send("screen-capture", null);
     return true;

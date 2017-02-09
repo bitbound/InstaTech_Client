@@ -336,7 +336,6 @@ public static class SECUR32
         };
         IntPtr pluid;
         IntPtr lsaHan;
-        ulong secMode;
         uint authPackID;
         IntPtr kerbLogInfo;
         SECUR32.LSA_STRING logonProc = new SECUR32.LSA_STRING()

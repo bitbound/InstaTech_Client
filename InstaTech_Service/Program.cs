@@ -33,28 +33,36 @@ namespace InstaTech_Service
                     File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location), true);
                 }
                 catch { }
-                ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
-                InstallContext Context = new InstallContext("", new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location)});
-                ServiceInstallerObj.Context = Context;
-                ServiceInstallerObj.DisplayName = "InstaTech Service";
-                ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
-                ServiceInstallerObj.ServiceName = "InstaTech_Service";
-                ServiceInstallerObj.StartType = ServiceStartMode.Automatic;
-                ServiceInstallerObj.DelayedAutoStart = true;
-                ServiceInstallerObj.Parent = new ServiceProcessInstaller();
-
-                System.Collections.Specialized.ListDictionary state = new System.Collections.Specialized.ListDictionary();
-                ServiceInstallerObj.Install(state);
+                
 
                 var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                if (serv != null)
+                if (serv == null)
+                {
+                    ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
+                    InstallContext Context = new InstallContext("", new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) });
+                    ServiceInstallerObj.Context = Context;
+                    ServiceInstallerObj.DisplayName = "InstaTech Service";
+                    ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
+                    ServiceInstallerObj.ServiceName = "InstaTech_Service";
+                    ServiceInstallerObj.StartType = ServiceStartMode.Automatic;
+                    ServiceInstallerObj.DelayedAutoStart = true;
+                    ServiceInstallerObj.Parent = new ServiceProcessInstaller();
+
+                    System.Collections.Specialized.ListDictionary state = new System.Collections.Specialized.ListDictionary();
+                    ServiceInstallerObj.Install(state);
+                }
+                serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
+                if (serv != null && serv.Status != ServiceControllerStatus.Running)
                 {
                     serv.Start();
                 }
                 var psi = new ProcessStartInfo("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
-                psi.CreateNoWindow = false;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
                 Process.Start(psi);
+
+                // Set Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
+                var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
+                subkey.SetValue("SoftwareSASGeneration", "3", Microsoft.Win32.RegistryValueKind.DWord);
             }
             else if (args.Exists(str => str.ToLower() == "-uninstall"))
             {
@@ -62,12 +70,33 @@ namespace InstaTech_Service
                 if (serv != null)
                 {
                     serv.Stop();
+                    ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
+                    ServiceInstallerObj.Context = new InstallContext("", null); ;
+                    ServiceInstallerObj.ServiceName = "InstaTech_Service";
+                    ServiceInstallerObj.Uninstall(null);
                 }
-                ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
-                ServiceInstallerObj.Context = new InstallContext("", null); ;
-                ServiceInstallerObj.ServiceName = "InstaTech_Service";
-                ServiceInstallerObj.Uninstall(null);
+                
+                // Remove Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
+                var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
+                if (subkey.GetValue("SoftwareSASGeneration") != null)
+                {
+                    subkey.DeleteValue("SoftwareSASGeneration");
+                }
                 Environment.Exit(0);
+            }
+            else if (args.Exists(str => str.ToLower() == "-update"))
+            {
+                Socket.WriteToLog("Update install initiated.");
+                var procs = Process.GetProcessesByName("InstaTech_Service").Where(proc => proc.Id != Process.GetCurrentProcess().Id);
+                foreach (var proc in procs)
+                {
+                    proc.Kill();
+                }
+                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall").WaitForExit();
+                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-install");
+                Socket.WriteToLog("Update completed.");
+                Environment.Exit(0);
+                return;
             }
             else
             {
@@ -77,77 +106,6 @@ namespace InstaTech_Service
                 new Service1()
                 };
                 ServiceBase.Run(ServicesToRun);
-            }
-        }
-        static private async Task checkForUpdates()
-        {
-            WebClient webClient = new WebClient();
-            HttpClient httpClient = new HttpClient();
-            var strFilePath = System.IO.Path.GetTempPath() + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            HttpResponseMessage response;
-            if (File.Exists(strFilePath))
-            {
-                File.Delete(strFilePath);
-            }
-            try
-            {
-                response = await httpClient.GetAsync(Socket.versionURI);
-            }
-            catch
-            {
-                return;
-            }
-            var strCurrentVersion = await response.Content.ReadAsStringAsync();
-            var thisVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            var currentVersion = Version.Parse(strCurrentVersion);
-            if (currentVersion > thisVersion)
-            {
-
-                await webClient.DownloadFileTaskAsync(new Uri(Socket.downloadURI), strFilePath);
-                var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                if (serv != null)
-                {
-                    serv.Stop();
-                }
-                Process.Start(strFilePath, "\"" + System.Reflection.Assembly.GetExecutingAssembly().Location + "\"");
-                Environment.Exit(0);
-                return;
-            }
-        }
-        static private void checkArgs(string[] args)
-        {
-            if (args.Length > 1 && File.Exists(args[1]))
-            {
-                var count = 0;
-                var success = false;
-                while (success == false)
-                {
-                    System.Threading.Thread.Sleep(200);
-                    count++;
-                    if (count > 25)
-                    {
-                        break;
-                    }
-                    try
-                    {
-                        File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, args[1], true);
-                        success = true;
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-                }
-                if (success)
-                {
-                    var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                    if (serv != null)
-                    {
-                        serv.Start();
-                    }
-                    Environment.Exit(0);
-                }
-                return;
             }
         }
     }

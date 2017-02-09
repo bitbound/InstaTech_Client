@@ -1191,7 +1191,8 @@ namespace Win32_Classes
         public static extern uint SendInput(uint nInputs, [MarshalAs(UnmanagedType.LPArray), In] INPUT[] pInputs, int cbSize);
         [DllImport("user32.dll", SetLastError = false)]
         public static extern UIntPtr GetMessageExtraInfo();
-
+        [DllImport("sas.dll")]
+        public static extern void SendSAS(bool AsUser);
 
         #endregion
 
@@ -1201,21 +1202,171 @@ namespace Win32_Classes
         {
             return OpenInputDesktop(0, false, ACCESS_MASK.GENERIC_ALL);
         }
-        public static void SendLeftMouseDown(int x, int y)
+        public static void SendLeftMouseDown(int x, int y, bool Alt, bool Ctrl, bool Shift)
         {
+            VirtualKeyShort vk;
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input } , INPUT.Size);
+            }
+
             mouse_event(User32.MOUSEEVENTF_LEFTDOWN, (uint)x, (uint)y, 0, GetMessageExtraInfo());
+
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwFlags = KEYEVENTF.KEYUP, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
         }
-        public static void SendLeftMouseUp(int x, int y)
+        public static void SendLeftMouseUp(int x, int y, bool Alt, bool Ctrl, bool Shift)
         {
+            VirtualKeyShort vk;
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
             mouse_event(User32.MOUSEEVENTF_LEFTUP, (uint)x, (uint)y, 0, GetMessageExtraInfo());
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwFlags = KEYEVENTF.KEYUP, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
         }
-        public static void SendRightMouseDown(int x, int y)
+        public static void SendRightMouseDown(int x, int y, bool Alt, bool Ctrl, bool Shift)
         {
+            VirtualKeyShort vk;
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
             mouse_event(User32.MOUSEEVENTF_RIGHTDOWN, (uint)x, (uint)y, 0, GetMessageExtraInfo());
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwFlags = KEYEVENTF.KEYUP, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
         }
-        public static void SendRightMouseUp(int x, int y)
+        public static void SendRightMouseUp(int x, int y, bool Alt, bool Ctrl, bool Shift)
         {
+            VirtualKeyShort vk;
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
             mouse_event(User32.MOUSEEVENTF_RIGHTUP, (uint)x, (uint)y, 0, GetMessageExtraInfo());
+            if (Alt || Ctrl || Shift)
+            {
+                if (Alt)
+                {
+                    vk = VirtualKeyShort.MENU;
+                }
+                else if (Ctrl)
+                {
+                    vk = VirtualKeyShort.CONTROL;
+                }
+                else
+                {
+                    vk = VirtualKeyShort.SHIFT;
+                }
+                var union = new InputUnion() { ki = new KEYBDINPUT() { wVk = vk, wScan = 0, time = 0, dwFlags = KEYEVENTF.KEYUP, dwExtraInfo = GetMessageExtraInfo() } };
+                var input = new INPUT() { type = InputType.KEYBOARD, U = union };
+                SendInput(1, new INPUT[] { input }, INPUT.Size);
+            }
         }
 
         // Offsets are used in case there's a multi-monitor setup where the left-most or top-most edge of the virtual screen
@@ -1234,6 +1385,58 @@ namespace Win32_Classes
         public static uint SendMouseMove(double x, double y, int screenWidth, int screenHeight, int offsetX, int offsetY)
         {
             return User32.SendMouseMove((int)Math.Round(x * screenWidth), (int)Math.Round(y * screenHeight), screenWidth, screenHeight, offsetX, offsetY);
+        }
+        public static uint SendMouseWheel(int deltaY)
+        {
+            if (deltaY < 0)
+            {
+                deltaY = -120;
+            }
+            else if (deltaY > 0)
+            {
+                deltaY = 120;
+            }
+            var union = new User32.InputUnion() { mi = new User32.MOUSEINPUT() { dwFlags = User32.MOUSEEVENTF.WHEEL, dx = 0, dy = 0, time = 0, mouseData = deltaY, dwExtraInfo = (UIntPtr)User32.GetMessageExtraInfo() } };
+            var input = new User32.INPUT() { type = User32.InputType.MOUSE, U = union };
+            return User32.SendInput(1, new User32.INPUT[] { input }, User32.INPUT.Size);
+        }
+        public static string GetCurrentDesktop()
+        {
+            var inputDesktop = User32.OpenInputDesktop();
+            byte[] deskBytes = new byte[256];
+            uint lenNeeded;
+            ADVAPI32.GetUserObjectInformation(inputDesktop, ADVAPI32.UOI_NAME, deskBytes, 256, out lenNeeded);
+            string deskName;
+            try
+            {
+                deskName = Encoding.UTF8.GetString(trimBytes(deskBytes));
+            }
+            catch
+            {
+                deskName = "default";
+            }
+            User32.CloseDesktop(inputDesktop);
+            return deskName;
+        }
+        // Remove trailing empty bytes in the buffer.
+        static public byte[] trimBytes(byte[] bytes)
+        {
+            // Loop backwards through array until the first non-zero byte is found.
+            var firstZero = 0;
+            for (int i = bytes.Length - 1; i >= 0; i--)
+            {
+                if (bytes[i] != 0)
+                {
+                    firstZero = i + 1;
+                    break;
+                }
+            }
+            if (firstZero == 0)
+            {
+                throw new Exception("Byte array is empty.");
+            }
+            // Return non-empty bytes.
+            return bytes.Take(firstZero).ToArray();
         }
     }
 }
