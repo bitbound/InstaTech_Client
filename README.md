@@ -2,7 +2,7 @@
 
 A screen sharing client (WPF and cross-platform) intended use in remote tech support.
 
-### WPF Client (/InstaTech Client/)
+### WPF Client (/InstaTech_Client/)
 **Compatibility:** Windows 8.1 and 10.  Use the cross-platform version for Windows 7.
 
 The WPF version is a small, portable EXE for Windows 8.1 and 10.  It doesn't run on Windows 7 due to the lack of websocket support.
@@ -17,7 +17,7 @@ A self-installing Windows service that will listen for connections and launch th
    * -uninstall = Uninstalls the service.
    * -interactive = Launches an interactive process in the logged-on user's sessions.
 
-### Cross-Platform Client (/InstaTech CP/)
+### Cross-Platform Client (/InstaTech_CP/)
 **Compatibility:** Windows 7, Linux, and Mac.
 
 The cross-platform version is larger than the WPF and uses an installer.  However, it works on all versions of Windows, Linux, and Mac.  It's built with Electron (http://electron.atom.io).
@@ -27,7 +27,7 @@ The WPF client and cross-platform client, when launched, will generate a random 
 
 Computers that have the Windows service will show up in the Unattended mode.  This is currently inaccessible in the demo.  A private InstaTech server is required for it.
 
-The remote control tool is currently located at https://instatech.org/Demo/Remote_Control.
+The remote control tool is currently located at https://demo.instatech.org/Remote_Control.
 
 ### 3rd-Party Libraries
 The InstaTech project uses the below 3rd-party libraries.  A huge thank you to the creators for these!  They are all awesome, and I highly encourage you to check them out.
