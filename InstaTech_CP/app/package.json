@@ -1,7 +1,7 @@
 {
   "name": "instatechcp",
   "productName": "InstaTech CP",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "InstaTech Cross-Platform Client",
   "license": "Apache-2.0",
   "author": {
@@ -14,7 +14,7 @@
   "scripts": {
     "start": "electron .",
     "build": "build",
-    "rebuild": "npm rebuild --runtime=electron --target=1.4.13 --disturl=https://atom.io/download/atom-shell --abi=50"
+    "rebuild": "npm rebuild --runtime=electron --target=1.6.0 --disturl=https://atom.io/download/atom-shell --abi=48"
   },
   "files": [
     "main.js",

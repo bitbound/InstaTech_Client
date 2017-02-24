@@ -27,7 +27,25 @@ namespace InstaTech_Service
 
         protected override void OnStart(string[] args)
         {
+            base.OnStart(args);
             Socket.StartService();
+        }
+        protected override void OnStop()
+        {
+            if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
+            {
+                var thisProc = Process.GetCurrentProcess();
+                var allProcs = Process.GetProcessesByName("InstaTech_Service");
+                foreach (var proc in allProcs)
+                {
+                    if (proc.Id != thisProc.Id)
+                    {
+                        proc.Kill();
+                    }
+                }
+                Process.Start("cmd", "/c sc delete InstaTech_Service");
+            }
+            base.OnStop();
         }
     }
 }

@@ -1,21 +1,26 @@
 # InstaTech Client
 
-A screen sharing client (WPF and cross-platform) intended use in remote tech support.
+A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server (see https://instatech.org for details).
 
-### WPF Client (/InstaTech Client/)
-**Compatibility:** Windows 8.1 and 10.  Use the cross-platform version for Windows 7.
-
-The WPF version is a small, portable EXE for Windows 8.1 and 10.  It doesn't run on Windows 7 due to the lack of websocket support.
-
-### Windows Service Client (/InstaTech_Service/)
+### WPF Client + Windows Service (/InstaTech Client/)
 **Compatibility:** Windows 8.1 and 10.
 
-A self-installing Windows service that will listen for connections and launch the client in the logged-on user's session.
+The WPF version is a small, portable EXE for Windows 8.1 and 10.  It contains the Windows Service and can be used from the command line in the same way.
 
 **Switches**
    * -install = Installs the service and begins listening for connections.
    * -uninstall = Uninstalls the service.
-   * -interactive = Launches an interactive process in the logged-on user's sessions.
+   * -update = Updates the installed service to this version.
+
+### Windows Service Client (/InstaTech_Service/)
+**Compatibility:** Windows 8.1 and 10.
+
+A self-installing Windows service that will listen for connections and launch the client in the logged-on user's session.  This is embedded in the WPF client.
+
+**Switches**
+   * -install = Installs the service and begins listening for connections.
+   * -uninstall = Uninstalls the service.
+   * -update = Updates the installed service to this version.
 
 ### Cross-Platform Client (/InstaTech CP/)
 **Compatibility:** Windows 7, Linux, and Mac.

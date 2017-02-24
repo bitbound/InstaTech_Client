@@ -122,6 +122,7 @@
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
     <Content Include="InstaTech.ico" />
+    <EmbeddedResource Include="Resources\Notifier.exe" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Win32_Classes\Win32_Classes.csproj">
@@ -141,6 +142,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -149,4 +151,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.4\build\dotnet\Fody.targets'))" />
   </Target>
+  <PropertyGroup>
+    <PreBuildEvent>copy "C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\Notifier\bin\$(ConfigurationName)\Notifier.exe" "C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech_Service\Resources\Notifier.exe" /y</PreBuildEvent>
+  </PropertyGroup>
 </Project>

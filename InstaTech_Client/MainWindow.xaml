@@ -6,43 +6,51 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InstaTech_Client"
         mc:Ignorable="d"
-        Title="InstaTech" Height="250" Width="300" ResizeMode="NoResize" Loaded="Window_Loaded" MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="Assets/InstaTech.png">
+        Title="InstaTech" Height="250" Width="300" ResizeMode="NoResize" Loaded="Window_Loaded" MouseLeftButtonDown="Window_MouseLeftButtonDown" Icon="Assets/InstaTech.png" WindowStyle="None" BorderBrush="Gray" BorderThickness="1">
     <Grid>
         <Grid.Background>
             <ImageBrush ImageSource="Assets/ITCBackground.png" Opacity="0.75"/>
         </Grid.Background>
-        <Grid Margin="10">
-            <Button x:Name="buttonMenu" HorizontalAlignment="Right" VerticalAlignment="Top" Height="25" Width="25" Margin="0,15,0,0" Background="Transparent" BorderBrush="Transparent" Click="buttonMenu_Click">
-                <Image Source="Assets/HamburgerMenu_16x.png"></Image>
-                <Button.ContextMenu>
-                    <ContextMenu>
-                        <!--<MenuItem Header="Reboot and Reconnect"/>
-                        <MenuItem Header="Unattended Access"/>-->
-                        <MenuItem x:Name="menuAbout" Header="About" Click="menuAbout_Click"/>
-                    </ContextMenu>
-                </Button.ContextMenu>
-            </Button>
-            <StackPanel x:Name="stackMain"  HorizontalAlignment="Stretch" VerticalAlignment="Top">
-                <TextBlock Text="InstaTech" FontWeight="Bold" FontSize="25" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"></TextBlock>
-                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
-                    <TextBlock Text="Session ID:" FontSize="15"></TextBlock>
-                    <TextBox x:Name="textSessionID" HorizontalAlignment="Right" FontSize="15" Foreground="Gray" Text="Retreiving..." TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" PreviewMouseLeftButtonUp="textSessionID_PreviewMouseLeftButtonUp" Cursor="Hand"></TextBox>
-                </Grid>
-                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
-                    <TextBlock Text="Agent Status:" FontSize="15"></TextBlock>
-                    <TextBox x:Name="textAgentStatus" HorizontalAlignment="Right" Height="22"  Padding="0,1,0,0" Text="Not Connected" TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" Cursor="Hand" PreviewMouseLeftButtonUp="textAgentStatus_PreviewMouseLeftButtonUp"></TextBox>
-                </Grid>
-                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
-                    <TextBlock Text="Files Transferred:" FontSize="15"></TextBlock>
-                    <TextBox x:Name="textFilesTransferred" HorizontalAlignment="Right" Height="22"  Padding="0,1,0,0" Text="0" TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" Cursor="Hand" PreviewMouseLeftButtonUp="textFilesTransferred_PreviewMouseLeftButtonUp"></TextBox>
-                </Grid>
-            </StackPanel>
-            <StackPanel x:Name="stackReconnect" HorizontalAlignment="Stretch" VerticalAlignment="Center" Visibility="Collapsed">
-                <TextBlock Text="Your session has ended." FontWeight="Bold" FontSize="20" HorizontalAlignment="Center"></TextBlock>
-                <Button x:Name="buttonNewSession" Height="50" Width="130" FontSize="20" Margin="0,20,0,0" HorizontalAlignment="Center" Click="buttonNewSession_Click">
-                    New Session
+        <StackPanel>
+            <Grid>
+                <Button x:Name="buttonClose" Height="15" Width="15" BorderBrush="Transparent" BorderThickness="0" HorizontalAlignment="Right" Background="Transparent" VerticalAlignment="Top" Margin="5" Click="buttonClose_Click" Cursor="Hand">
+                    <Image Source="Assets/Close_16x.png"></Image>
                 </Button>
-            </StackPanel>
-        </Grid>
+            </Grid>
+            <Grid Margin="10,0,10,10">
+                <Button x:Name="buttonMenu" HorizontalAlignment="Right" VerticalAlignment="Top" Height="25" Width="25" Margin="0,15,0,0" Background="Transparent" BorderBrush="Transparent" Click="buttonMenu_Click">
+                    <Image Source="Assets/HamburgerMenu_16x.png"></Image>
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="menuUpgrade" Header="Upgrade to Service" Click="menuUpgrade_Click" ToolTip="Elevates the process to a service, allowing interaction with UAC and logon windows." />
+                            <MenuItem x:Name="menuUnattended" Header="Unattended Access" Click="menuUnattended_Click" ToolTip="Installs or uninstalls a service that will allow unattended access to this computer." />
+                            <MenuItem x:Name="menuUAC" Header="Handle UAC" Click="menuUAC_Click" ToolTip="If enabled, UAC prompts will be closed automatically if they appear.  This prevents the cursor from 'getting stuck,' since this client can't interact with UAC prompts.  To interact with UAC, install the service or do a one-time upgrade." IsCheckable="True" IsChecked="True" />
+                            <MenuItem x:Name="menuAbout" Header="About" Click="menuAbout_Click" ToolTip="Shows additional information." />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <StackPanel x:Name="stackMain"  HorizontalAlignment="Stretch" VerticalAlignment="Top">
+                    <TextBlock Text="InstaTech" FontWeight="Bold" FontSize="25" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"></TextBlock>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
+                        <TextBlock Text="Session ID:" FontSize="15"></TextBlock>
+                        <TextBox x:Name="textSessionID" HorizontalAlignment="Right" FontSize="15" Foreground="Gray" Text="Retreiving..." TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" PreviewMouseLeftButtonUp="textSessionID_PreviewMouseLeftButtonUp" Cursor="Hand" ToolTip="Click to copy the session ID into the clipboard."></TextBox>
+                    </Grid>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
+                        <TextBlock Text="Agent Status:" FontSize="15"></TextBlock>
+                        <TextBox x:Name="textAgentStatus" HorizontalAlignment="Right" Height="22"  Padding="0,1,0,0" Text="Not Connected" TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" Cursor="Hand" PreviewMouseLeftButtonUp="textAgentStatus_PreviewMouseLeftButtonUp" ToolTip="Click to disconnect the agent viewing your screen, if connected."></TextBox>
+                    </Grid>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
+                        <TextBlock Text="Files Transferred:" FontSize="15"></TextBlock>
+                        <TextBox x:Name="textFilesTransferred" HorizontalAlignment="Right" Height="22"  Padding="0,1,0,0" Text="0" TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" Cursor="Hand" PreviewMouseLeftButtonUp="textFilesTransferred_PreviewMouseLeftButtonUp" ToolTip="Click to browse the files transferred to this computer."></TextBox>
+                    </Grid>
+                </StackPanel>
+                <StackPanel x:Name="stackReconnect" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,50,0,0" Visibility="Collapsed">
+                    <TextBlock Text="Your session has ended." FontWeight="Bold" FontSize="20" HorizontalAlignment="Center"></TextBlock>
+                    <Button x:Name="buttonNewSession" Height="50" Width="130" FontSize="20" Margin="0,20,0,0" HorizontalAlignment="Center" Click="buttonNewSession_Click">
+                        New Session
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
     </Grid>
 </Window>

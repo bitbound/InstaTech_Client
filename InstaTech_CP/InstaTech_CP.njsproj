@@ -49,6 +49,7 @@
     <Content Include="app\build\icons\64x64.png" />
     <Content Include="app\build\icons\96x96.png" />
     <Content Include="app\build\icon.icns" />
+    <Content Include="app\downloading.html" />
     <Content Include="app\index.css" />
     <Content Include="app\index.html" />
     <Content Include="app\package.json" />

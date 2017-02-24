@@ -1,15 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26127.3
+VisualStudioVersion = 15.0.26206.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstaTech_Client", "InstaTech_Client\InstaTech_Client.csproj", "{A9AE81EC-9496-4B7E-8C28-643E00E911B1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E6C1D975-7482-4DA3-BAF6-91D860DB2352} = {E6C1D975-7482-4DA3-BAF6-91D860DB2352}
+	EndProjectSection
 EndProject
 Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "InstaTech_CP", "InstaTech_CP\InstaTech_CP.njsproj", "{5F6A5988-A1F0-4C6E-A495-06BB0A58F408}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Win32_Classes", "Win32_Classes\Win32_Classes.csproj", "{2A120F3C-0F03-4388-A686-1D09298987FC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstaTech_Service", "InstaTech_Service\InstaTech_Service.csproj", "{E6C1D975-7482-4DA3-BAF6-91D860DB2352}"
+	ProjectSection(ProjectDependencies) = postProject
+		{927A919A-58EC-45FC-9759-22FF4DCAD676} = {927A919A-58EC-45FC-9759-22FF4DCAD676}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notifier", "Notifier\Notifier.csproj", "{927A919A-58EC-45FC-9759-22FF4DCAD676}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -31,6 +39,10 @@ Global
 		{E6C1D975-7482-4DA3-BAF6-91D860DB2352}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6C1D975-7482-4DA3-BAF6-91D860DB2352}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6C1D975-7482-4DA3-BAF6-91D860DB2352}.Release|Any CPU.Build.0 = Release|Any CPU
+		{927A919A-58EC-45FC-9759-22FF4DCAD676}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{927A919A-58EC-45FC-9759-22FF4DCAD676}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{927A919A-58EC-45FC-9759-22FF4DCAD676}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{927A919A-58EC-45FC-9759-22FF4DCAD676}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

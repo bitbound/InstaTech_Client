@@ -18,7 +18,7 @@
   "scripts": {
     "start": "electron ./app",
     "build": "build",
-    "rebuild": "npm rebuild --runtime=electron --target=1.4.13 --disturl=https://atom.io/download/atom-shell --abi=50",
+    "rebuild": "npm rebuild --runtime=electron --target=1.6.0 --disturl=https://atom.io/download/atom-shell --abi=48",
     "postinstall": "install-app-deps"
   },
   "files": [
@@ -43,7 +43,7 @@
     "appId": "InstaTech CP",
     "category": "Utility",
     "win": {
-      "iconUrl": "https://instatech.org/Assets/Images/InstaTech.ico"
+      "iconUrl": "https://instatech.org/favicon.ico"
     }
   }
 }

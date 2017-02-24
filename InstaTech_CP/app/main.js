@@ -55,6 +55,7 @@ function createMainWindow() {
     win.on('closed', function () { app.quit() });
     win.on('ready-to-show', function () {
         win.show();
+        checkForUpdates();
     });
 	return win;
 }
@@ -87,16 +88,25 @@ function checkForUpdates() {
                                 downloadURL = "";
                         }
                         var fileName = downloadURL.split("/")[downloadURL.split("/").length - 1];
-                        if (!fs.existsSync(os.tmpdir() + "\\" + fileName)) {
+                        if (fs.existsSync(os.tmpdir() + "\\" + fileName)) {
                             fs.unlinkSync(os.tmpdir() + "\\" + fileName);
                         };
+                        var downloadWin = new electron.BrowserWindow({
+                            width: 300,
+                            height: 150,
+                            show: true,
+                            title: "InstaTech Update",
+                            icon: `file://${__dirname}/Assets/InstaTech.ico`
+                        });
+                        downloadWin.setMenuBarVisibility(false);
+                        downloadWin.loadURL(`file://${__dirname}/downloading.html`);
                         https.get(downloadURL, function (result) {
                             var stream = fs.createWriteStream(os.tmpdir() + "\\" + fileName);
                             result.pipe(stream);
                             stream.on("finish", function () {
                                 stream.close();
                                 electron.shell.openExternal(os.tmpdir() + "\\" + fileName);
-                                electron.remote.app.exit(0);
+                                electron.app.exit(0);
                             });
                         });
                     }
@@ -145,6 +155,5 @@ app.on('ready', () => {
         title: "InstaTech Worker",
     });
     workerWindow.loadURL(`file://${__dirname}/worker.html`);
-    checkForUpdates();
     cleanupTempFiles();
 });

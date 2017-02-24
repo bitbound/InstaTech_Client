@@ -65,7 +65,8 @@ namespace InstaTech_Service
         public static async Task StartInteractive()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-
+            var notifierPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Notifier.exe");
+            Process.Start(notifierPath);
             //Initialize variables requiring screen dimensions.
             totalWidth = SystemInformation.VirtualScreen.Width;
             totalHeight = SystemInformation.VirtualScreen.Height;
@@ -100,12 +101,20 @@ namespace InstaTech_Service
             };
             idleTimer.Start();
             await initWebSocket();
-
+            string connectionType;
+            if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
+            {
+                connectionType = "ClientConsoleOnce";
+            }
+            else
+            {
+                connectionType = "ClientConsole";
+            }
             // Send notification to server that this connection is for a client console app.
             var request = new
             {
                 Type = "ConnectionType",
-                ConnectionType = "ClientConsole",
+                ConnectionType = connectionType,
                 ComputerName = Environment.MachineName
             };
             await SocketSend(request);
@@ -117,11 +126,20 @@ namespace InstaTech_Service
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             await initWebSocket();
+            string connectionType;
+            if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
+            {
+                connectionType = "ClientServiceOnce";
+            }
+            else
+            {
+                connectionType = "ClientService";
+            }
             // Send notification to server that this connection is for a client service.
             var request = new
             {
                 Type = "ConnectionType",
-                ConnectionType = "ClientService",
+                ConnectionType = connectionType,
                 ComputerName = Environment.MachineName
             };
             await SocketSend(request);
@@ -319,10 +337,29 @@ namespace InstaTech_Service
                                 await SocketSend(jsonMessage);
                                 break;
                             case "PartnerClose":
-                                Application.Exit();
+                                if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
+                                {
+                                    foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                                    {
+                                        if (proc.Id != Process.GetCurrentProcess().Id)
+                                        {
+                                            proc.Kill();
+                                        }
+                                    }
+                                    Process.Start("cmd", "/c sc delete InstaTech_Service");
+                                }
+                                Environment.Exit(0);
                                 break;
                             case "PartnerError":
-                                Application.Exit();
+                                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                                {
+                                    if (proc.Id != Process.GetCurrentProcess().Id)
+                                    {
+                                        proc.Kill();
+                                    }
+                                }
+                                Process.Start("cmd", "/c sc delete InstaTech_Service");
+                                Environment.Exit(0);
                                 break;
                             default:
                                 break;
@@ -332,8 +369,16 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
+                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                {
+                    if (proc.Id != Process.GetCurrentProcess().Id)
+                    {
+                        proc.Kill();
+                    }
+                }
+                Process.Start("cmd", "/c sc delete InstaTech_Service");
                 WriteToLog(ex);
-                Application.Exit();
+                Environment.Exit(1);
             }
         }
 
@@ -357,11 +402,9 @@ namespace InstaTech_Service
                         switch ((string)jsonMessage.Type)
                         {
                             case "ConnectUnattended":
-                                var thisProc = System.Diagnostics.Process.GetCurrentProcess();
-                                var allProcs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service");
-                                foreach (var proc in allProcs)
+                                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
                                 {
-                                    if (proc.SessionId != thisProc.SessionId)
+                                    if (proc.SessionId != Process.GetCurrentProcess().SessionId)
                                     {
                                         proc.Kill();
                                     }
@@ -388,6 +431,17 @@ namespace InstaTech_Service
                                     };
                                     await SocketSend(response);
                                 }
+                                break;
+                            case "ConnectUnattendedOnce":
+                                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                                {
+                                    if (proc.SessionId != Process.GetCurrentProcess().SessionId)
+                                    {
+                                        proc.Kill();
+                                    }
+                                }
+                                var pi = new ADVAPI32.PROCESS_INFORMATION();
+                                ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive -once", User32.GetCurrentDesktop().ToLower(), out pi);
                                 break;
                             case "ServiceDuplicate":
                                 WriteToLog(new Exception("Service is already running on another computer with the same name."));
@@ -502,7 +556,7 @@ namespace InstaTech_Service
                 {
                     using (var icon = Icon.FromHandle(ci.hCursor))
                     {
-                        graphic.DrawIcon(icon, (int)Math.Round(ci.ptScreenPos.x - (icon.Width * .25)), (int)Math.Round(ci.ptScreenPos.y - (icon.Height * .25)));
+                        graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
                     }
                 }
                 if (sendFullScreenshot)

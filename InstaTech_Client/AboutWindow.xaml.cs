@@ -49,5 +49,10 @@ namespace InstaTech_Client
         {
             System.Diagnostics.Process.Start("https://instatech.org/Docs/InstaTech_License.html");
         }
+
+        private void buttonClose_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
     }
 }

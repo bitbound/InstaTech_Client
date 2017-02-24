@@ -75,13 +75,16 @@ namespace InstaTech_Client
         int offsetY = 0;
         System.Drawing.Point cursorPos;
         bool sendFullScreenshot = true;
+        bool handleUAC = true;
+        System.Timers.Timer uacTimer = new System.Timers.Timer(3000);
 
         public MainWindow()
         {
             InitializeComponent();
             Current = this;
             App.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
-            checkArgs(Environment.GetCommandLineArgs());
+            checkArgs(Environment.GetCommandLineArgs().ToList());
+            startUACTimer();
         }
 
 
@@ -196,7 +199,52 @@ namespace InstaTech_Client
                 showToolTip(textFilesTransferred, "No files available.", Colors.Black);
             }
         }
+        private async void menuUpgrade_Click(object sender, RoutedEventArgs e)
+        {
+            var services = System.ServiceProcess.ServiceController.GetServices();
+            var itService = services.ToList().Find(sc => sc.ServiceName == "InstaTech_Service");
+            if (itService != null)
+            {
+                System.Windows.MessageBox.Show("The InstaTech Service is already installed.  Please connect via Unattended Mode from the remote control.", "Service Already Installed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!WindowsIdentity.GetCurrent().Owner.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid))
+            {
+                System.Windows.MessageBox.Show("The client must be running as an administrator (i.e. elevated) in order to upgrade to a service.", "Elevation Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            try
+            {
+                File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+            }
+            catch
+            {
+                System.Windows.MessageBox.Show("Failed to unpack the service into the temp directory.  Try clearing the temp directory.", "Write Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-install -once");
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            Process.Start(psi);
+            await socketSend(new {
+                Type = "ConnectUpgrade",
+                ComputerName = Environment.MachineName
+            });
+        }
 
+        private void menuUnattended_Click(object sender, RoutedEventArgs e)
+        {
+            
+            if (!WindowsIdentity.GetCurrent().Owner.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid))
+            {
+                System.Windows.MessageBox.Show("The client must be running as an administrator (i.e. elevated) in order to access unattended features.", "Elevation Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            new UnattendedWindow().ShowDialog();
+        }
+        private void menuUAC_Click(object sender, RoutedEventArgs e)
+        {
+            handleUAC = menuUAC.IsChecked;
+        }
         private void menuAbout_Click(object sender, RoutedEventArgs e)
         {
             var win = new AboutWindow();
@@ -254,21 +302,66 @@ namespace InstaTech_Client
             {
                 Type = "ConnectionType",
                 ConnectionType = "ClientApp",
+                ComputerName = Environment.MachineName,
             };
             await socketSend(request);
             handleSocket();
         }
-        private void checkArgs(string[] args)
+        private void checkArgs(List<string> args)
         {
-            if (args.Length > 1 && File.Exists(args[1]))
+            if (args.Exists(arg=>arg.Trim().ToLower() == "-install"))
             {
-                var count = 0;
+                try
+                {
+                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-install");
+                    psi.WindowStyle = ProcessWindowStyle.Hidden;
+                    var proc = Process.Start(psi);
+                    Environment.Exit(0);
+                }
+                catch
+                {
+                    Environment.Exit(1);
+                }
+            }
+            else if (args.Exists(arg => arg.Trim().ToLower() == "-uninstall"))
+            {
+                try
+                {
+                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
+                    psi.WindowStyle = ProcessWindowStyle.Hidden;
+                    var proc = Process.Start(psi);
+                    Environment.Exit(0);
+                }
+                catch
+                {
+                    Environment.Exit(1);
+                }
+            }
+            else if (args.Exists(arg => arg.Trim().ToLower() == "-update"))
+            {
+                try
+                {
+                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-update");
+                    psi.WindowStyle = ProcessWindowStyle.Hidden;
+                    var proc = Process.Start(psi);
+                    Environment.Exit(0);
+                }
+                catch
+                {
+                    Environment.Exit(1);
+                }
+            }
+            else if (args.Count > 1 && File.Exists(args[1]))
+            {
+                var startTime = DateTime.Now;
                 var success = false;
                 while (success == false)
                 {
-                    System.Threading.Thread.Sleep(200);
-                    count++;
-                    if (count > 25)
+                    Thread.Sleep(200);
+                    if (DateTime.Now - startTime > TimeSpan.FromSeconds(10))
                     {
                         break;
                     }
@@ -329,6 +422,20 @@ namespace InstaTech_Client
                                     ConnectionType = "Denied",
                                 };
                                 await socketSend(request);
+                                break;
+                            case "ConnectUpgrade":
+                                if (jsonMessage.Status == "timeout")
+                                {
+                                    System.Windows.MessageBox.Show("The upgrade request timed out.", "Upgrade Timeout", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                }
+                                else if (jsonMessage.Status == "nopartner")
+                                {
+                                    System.Windows.MessageBox.Show("You must have a partner connected before you can upgrade to a service.", "Partner Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                }
+                                else if (jsonMessage.Status == "ok")
+                                {
+                                    App.Current.Shutdown();
+                                }
                                 break;
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
@@ -542,7 +649,7 @@ namespace InstaTech_Client
                 {
                     using (var icon = System.Drawing.Icon.FromHandle(ci.hCursor))
                     {
-                        graphic.DrawIcon(icon, (int)Math.Round(ci.ptScreenPos.x - (icon.Width * .25)), (int)Math.Round(ci.ptScreenPos.y - (icon.Height * .25)));
+                        graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
                     }
                 }
                 if (sendFullScreenshot)
@@ -731,7 +838,7 @@ namespace InstaTech_Client
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
-        private void WriteToLog(Exception ex)
+        public static void WriteToLog(Exception ex)
         {
             var exception = ex;
             var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
@@ -769,6 +876,31 @@ namespace InstaTech_Client
                 Message = Message
             };
             File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
+        }
+
+        private void buttonClose_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void startUACTimer()
+        {
+            uacTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
+            {
+                if (handleUAC)
+                {
+                    var consent = Process.GetProcessesByName("Consent");
+                    if (consent.Length > 0)
+                    {
+                        foreach (var proc in consent)
+                        {
+                            proc.Kill();
+                        }
+                        System.Windows.MessageBox.Show("A UAC prompt was closed automatically.  This prevents your input from getting stuck, since this client can't interact with UAC prompts." + Environment.NewLine + Environment.NewLine + "To interact with UAC, install the service or do a one-time upgrade from the menu.", "UAC Handled", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            };
+            uacTimer.Start();
         }
     }
 }

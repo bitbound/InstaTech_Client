@@ -31,6 +31,15 @@ namespace InstaTech_Service
                 try
                 {
                     File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location), true);
+                    using (var rs = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("InstaTech_Service.Resources.Notifier.exe"))
+                    {
+                        using (var fs = new FileStream(Path.Combine(di.FullName, "Notifier.exe"), FileMode.Create))
+                        {
+                            rs.CopyTo(fs);
+                            fs.Close();
+                            rs.Close();
+                        }
+                    }
                 }
                 catch { }
                 
@@ -38,8 +47,17 @@ namespace InstaTech_Service
                 var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
                 if (serv == null)
                 {
+                    string[] command;
+                    if (args.Exists(str => str.ToLower() == "-once"))
+                    {
+                        command = new String[] { "/assemblypath=\"" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\" -once" };
+                    }
+                    else
+                    {
+                        command = new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) };
+                    }
                     ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
-                    InstallContext Context = new InstallContext("", new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) });
+                    InstallContext Context = new InstallContext("", command);
                     ServiceInstallerObj.Context = Context;
                     ServiceInstallerObj.DisplayName = "InstaTech Service";
                     ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
