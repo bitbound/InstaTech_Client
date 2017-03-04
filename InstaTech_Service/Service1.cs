@@ -47,5 +47,9 @@ namespace InstaTech_Service
             }
             base.OnStop();
         }
+        protected override async void OnSessionChange(SessionChangeDescription changeDescription)
+        {
+            await Socket.SendHeartbeat();
+        }
     }
 }

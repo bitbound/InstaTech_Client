@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 using System.Diagnostics;
 using System.Net;
+using System.Management;
 
 namespace InstaTech_Service
 {
@@ -61,7 +62,8 @@ namespace InstaTech_Service
         static bool sendFullScreenshot = true;
         static DateTime lastMessage = DateTime.Now;
         static System.Timers.Timer idleTimer = new System.Timers.Timer(5000);
-
+        static System.Timers.Timer heartbeatTimer = new System.Timers.Timer(3600000);
+        static dynamic deployFileRequest { get; set; }
         public static async Task StartInteractive()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -100,7 +102,7 @@ namespace InstaTech_Service
                 }
             };
             idleTimer.Start();
-            await initWebSocket();
+            await InitWebSocket();
             string connectionType;
             if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
             {
@@ -118,14 +120,14 @@ namespace InstaTech_Service
                 ComputerName = Environment.MachineName
             };
             await SocketSend(request);
-            await handleInteractiveSocket();
+            await HandleInteractiveSocket();
         }
 
 
         public static async void StartService()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            await initWebSocket();
+            await InitWebSocket();
             string connectionType;
             if (Environment.GetCommandLineArgs().ToList().Exists(str => str.ToLower() == "-once"))
             {
@@ -135,18 +137,31 @@ namespace InstaTech_Service
             {
                 connectionType = "ClientService";
             }
+
+            var uptime = new PerformanceCounter("System", "System Up Time", true);
+            uptime.NextValue();
+            var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
+            var col = mos.Get();
+            var process = col.Cast<ManagementObject>().First();
+            var ownerInfo = new string[2];
+            process.InvokeMethod("GetOwner", ownerInfo);
             // Send notification to server that this connection is for a client service.
             var request = new
             {
                 Type = "ConnectionType",
                 ConnectionType = connectionType,
-                ComputerName = Environment.MachineName
+                ComputerName = Environment.MachineName,
+                CurrentUser = ownerInfo[1] + "\\" + ownerInfo[0],
+                LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
             };
             await SocketSend(request);
-            handleServiceSocket();
+            heartbeatTimer.Elapsed += async (object send, System.Timers.ElapsedEventArgs args) => {
+                await SendHeartbeat();
+            };
+            HandleServiceSocket();
         }
 
-        private static async Task initWebSocket()
+        private static async Task InitWebSocket()
         {
             try
             {
@@ -172,7 +187,7 @@ namespace InstaTech_Service
         {
             WriteToLog(e.ExceptionObject as Exception);
         }
-        static private async Task handleInteractiveSocket()
+        static private async Task HandleInteractiveSocket()
         {
             try
             {
@@ -187,7 +202,7 @@ namespace InstaTech_Service
                     lastMessage = DateTime.Now;
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
                         
                         switch ((string)jsonMessage.Type)
@@ -202,8 +217,8 @@ namespace InstaTech_Service
                                         proc.Kill();
                                     }
                                 }
-                                await checkForUpdates();
-                                beginScreenCapture();
+                                await CheckForUpdates();
+                                BeginScreenCapture();
                                 break;
                             case "RTCOffer":
                                 var request = new
@@ -217,29 +232,25 @@ namespace InstaTech_Service
                                 sendFullScreenshot = true;
                                 break;
                             case "FileTransfer":
-
-                                var retrievalCode = jsonMessage.RetrievalCode.ToString();
-                                var httpRequest = new
-                                {
-                                    Type = "Download",
-                                    RetrievalCode = retrievalCode,
-                                };
-                                var httpResult = await httpClient.PostAsync(fileTransferURI, new StringContent(JsonConvert.SerializeObject(httpRequest)));
-                                var strResult = await httpResult.Content.ReadAsStringAsync();
+                                var url = jsonMessage.URL.ToString();
+                                HttpResponseMessage httpResult = await httpClient.GetAsync(url);
+                                var arrResult = await httpResult.Content.ReadAsByteArrayAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
-                                var byteFileData = Convert.FromBase64String(strResult);
-                                var path = System.IO.Path.GetTempPath() + @"\InstaTech\";
+                                var path = Path.GetTempPath() + @"\InstaTech\";
                                 if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
                                 {
                                     path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\";
                                 }
                                 var di = Directory.CreateDirectory(path);
-                                File.WriteAllBytes(di.FullName + strFileName, byteFileData);
+                                File.WriteAllBytes(di.FullName + strFileName, arrResult);
                                 Process.Start("explorer.exe", di.FullName);
                                 break;
                             case "SendClipboard":
                                 byte[] arrData = Convert.FromBase64String(jsonMessage.Data.ToString());
-                                System.Windows.Clipboard.SetText(Encoding.UTF8.GetString(arrData));
+                                User32.OpenClipboard(User32.GetDesktopWindow());
+                                User32.EmptyClipboard();
+                                User32.SetClipboardData(1, Marshal.StringToHGlobalAnsi(Encoding.UTF8.GetString(arrData)));
+                                User32.CloseClipboard();
                                 break;
                             case "MouseMove":
                                 User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
@@ -382,7 +393,7 @@ namespace InstaTech_Service
             }
         }
 
-        private async static void handleServiceSocket()
+        private async static void HandleServiceSocket()
         {
             try
             {
@@ -396,7 +407,7 @@ namespace InstaTech_Service
                     result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
 
                         switch ((string)jsonMessage.Type)
@@ -450,7 +461,55 @@ namespace InstaTech_Service
                                 User32.SendSAS(false);
                                 break;
                             case "Uninstall":
-                                System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall");
+                                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall");
+                                break;
+                            case "FileDeploy":
+                                deployFileRequest = jsonMessage;
+                                var url = jsonMessage.URL.ToString();
+                                HttpResponseMessage httpResult = await httpClient.GetAsync(url);
+                                var arrResult = await httpResult.Content.ReadAsByteArrayAsync();
+                                string strFileName = jsonMessage.FileName.ToString();
+                                var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\");
+                                File.WriteAllBytes(di.FullName + strFileName, arrResult);
+                                var ext = Path.GetExtension(strFileName).ToLower();
+                                ProcessStartInfo psi;
+                                if (ext == ".bat" || ext == ".exe")
+                                {
+                                    psi = new ProcessStartInfo(di.FullName + strFileName);
+                                    if (!String.IsNullOrWhiteSpace((string)jsonMessage.Arguments))
+                                    {
+                                        psi.Arguments = jsonMessage.Arguments;
+                                    }
+                                }
+                                else if (ext == ".ps1")
+                                {
+                                    if (!String.IsNullOrWhiteSpace((string)jsonMessage.Arguments))
+                                    {
+                                        psi = new ProcessStartInfo("powershell.exe", "-executionpolicy bypass -File " + di.FullName + strFileName + " " + jsonMessage.Arguments);
+                                    }
+                                    else
+                                    {
+                                        psi = new ProcessStartInfo("powershell.exe", "-executionpolicy bypass -File " + di.FullName + strFileName);
+                                    }
+                                }
+                                else
+                                {
+                                    return;
+                                }
+                                psi.RedirectStandardOutput = true;
+                                psi.UseShellExecute = false;
+                                var deployProc = new Process();
+                                deployProc.StartInfo = psi;
+                                deployProc.EnableRaisingEvents = true;
+                                deployProc.Start();
+                                deployProc.Exited += (object sender, EventArgs args) =>
+                                {
+                                    var proc = sender as Process;
+                                    deployFileRequest.Status = "ok";
+                                    deployFileRequest.ExitCode = proc.ExitCode;
+                                    deployFileRequest.Output = proc.StandardOutput.ReadToEnd();
+                                    SocketSend(deployFileRequest);
+                                };
                                 break;
                             default:
                                 break;
@@ -466,7 +525,7 @@ namespace InstaTech_Service
         }
 
         // Remove trailing empty bytes in the buffer.
-        static public byte[] trimBytes(byte[] bytes)
+        static public byte[] TrimBytes(byte[] bytes)
         {
             // Loop backwards through array until the first non-zero byte is found.
             var firstZero = 0;
@@ -485,17 +544,17 @@ namespace InstaTech_Service
             // Return non-empty bytes.
             return bytes.Take(firstZero).ToArray();
         }
-        static private async void beginScreenCapture()
+        static private async void BeginScreenCapture()
         {
             capturing = true;
             sendFullScreenshot = true;
             while (capturing == true)
             {
-                sendFrame();
+                SendFrame();
                 await Task.Delay(25);
             }
         }
-        static async private void sendFrame()
+        static async private void SendFrame()
         {
             if (!capturing)
             {
@@ -602,7 +661,40 @@ namespace InstaTech_Service
                 WriteToLog(ex);
             }
         }
-
+        static public async Task SendHeartbeat()
+        {
+            var uptime = new PerformanceCounter("System", "System Up Time", true);
+            uptime.NextValue();
+            var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
+            var col = mos.Get();
+            var process = col.Cast<ManagementObject>().First();
+            var ownerInfo = new string[2];
+            process.InvokeMethod("GetOwner", ownerInfo);
+            // Send notification to server that this connection is for a client service.
+            var request = new
+            {
+                Type = "Heartbeat",
+                ComputerName = Environment.MachineName,
+                CurrentUser = ownerInfo[1] + "\\" + ownerInfo[0],
+                LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
+            };
+            await SocketSend(request);
+            var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\");
+            foreach (var file in di.GetFiles())
+            {
+                if (DateTime.Now - file.LastWriteTime > TimeSpan.FromDays(1))
+                {
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteToLog(ex);
+                    }
+                }
+            }
+        }
         static private byte[] GetChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
         {
             if (bitmap1.Height != bitmap2.Height || bitmap1.Width != bitmap2.Width)
@@ -701,29 +793,7 @@ namespace InstaTech_Service
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
-        public static void WriteToLog(Exception ex)
-        {
-            var exception = ex;
-            var path = System.IO.Path.GetTempPath() + "InstaTech_Service_Logs.txt";
-            while (exception != null)
-            {
-                var jsonError = new
-                {
-                    Type = "Error",
-                    Timestamp = DateTime.Now.ToString(),
-                    Message = exception?.Message,
-                    Source = exception?.Source,
-                    StackTrace = exception?.StackTrace,
-                };
-                if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Logs.txt";
-                }
-                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
-                exception = exception.InnerException;
-            }
-        }
-        static private async Task checkForUpdates()
+        static private async Task CheckForUpdates()
         {
             WebClient webClient = new WebClient();
             HttpClient httpClient = new HttpClient();
@@ -759,6 +829,38 @@ namespace InstaTech_Service
                 Process.Start(strFilePath, "-update");
                 Environment.Exit(0);
                 return;
+            }
+        }
+        public static void WriteToLog(Exception ex)
+        {
+            var exception = ex;
+            var path = System.IO.Path.GetTempPath() + "InstaTech_Service_Logs.txt";
+            if (File.Exists(path))
+            {
+                var fi = new FileInfo(path);
+                while (fi.Length > 1000000)
+                {
+                    var content = File.ReadAllLines(path);
+                    File.WriteAllLines(path, content.Skip(10));
+                    fi = new FileInfo(path);
+                }
+            }
+            while (exception != null)
+            {
+                var jsonError = new
+                {
+                    Type = "Error",
+                    Timestamp = DateTime.Now.ToString(),
+                    Message = exception?.Message,
+                    Source = exception?.Source,
+                    StackTrace = exception?.StackTrace,
+                };
+                if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech_Service_Logs.txt";
+                }
+                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
+                exception = exception.InnerException;
             }
         }
         public static void WriteToLog(string Message)

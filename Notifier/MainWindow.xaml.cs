@@ -26,6 +26,9 @@ namespace Notifier
         public MainWindow()
         {
             InitializeComponent();
+        }
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
             // Prevent multiple Notifiers from running.
             foreach (var proc in System.Diagnostics.Process.GetProcessesByName("Notifier"))
             {
@@ -35,25 +38,21 @@ namespace Notifier
                 }
             }
             Current = this;
-            timer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
+            timer.Elapsed += (object sen, System.Timers.ElapsedEventArgs args) =>
             {
                 var procs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service");
-                if (procs.Where(proc=>proc.SessionId == System.Diagnostics.Process.GetCurrentProcess().SessionId).Count() == 0)
+                if (procs.Where(proc => proc.SessionId == System.Diagnostics.Process.GetCurrentProcess().SessionId).Count() == 0)
                 {
                     MainWindow.Current.Dispatcher.Invoke(() => { Close(); });
                 }
             };
             timer.Start();
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
             var wa = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Left = wa.Right - ActualWidth;
             Top = wa.Bottom - ActualHeight;
         }
 
-        private async void rectToggleExpanded_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void gridToggleCollapse_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             var wa = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             if (stackContent.ActualWidth > 0)

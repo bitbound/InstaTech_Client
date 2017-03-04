@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Translucency")]
 [assembly: AssemblyProduct("Notifier")]
-[assembly: AssemblyCopyright("Copyright ©  2017 Translucency")]
+[assembly: AssemblyCopyright("Copyright ©  2017 Translucency.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

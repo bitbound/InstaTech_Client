@@ -21,22 +21,22 @@
                 <StackPanel>
                     <TextBlock FontSize="18" FontWeight="Bold" Margin="0,0,0,20">Service Setup</TextBlock>
                     <Grid>
-                        <TextBlock HorizontalAlignment="Left" Text="Installation Status:"></TextBlock>
-                        <TextBox x:Name="textInstalled" HorizontalAlignment="Right" TextAlignment="Center" Width="100" Height="20" Text="Not Installed" IsReadOnly="True"></TextBox>
+                        <TextBlock HorizontalAlignment="Left" Text="Installation Status:" FontSize="15"></TextBlock>
+                        <TextBox x:Name="textInstalled" HorizontalAlignment="Right" TextAlignment="Center" Width="100" Height="25" VerticalContentAlignment="Center" Text="Not Installed" IsReadOnly="True"></TextBox>
                     </Grid>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                        <Button x:Name="buttonInstall" HorizontalAlignment="Right" Padding="5,0,5,0" Margin="0,0,2,0" Click="buttonInstall_Click">Install</Button>
-                        <Button x:Name="buttonRemove" HorizontalAlignment="Right" Padding="5,0,5,0" Margin="2,0,0,0" IsEnabled="False" Click="buttonRemove_Click">Remove</Button>
+                        <Button x:Name="buttonInstall" HorizontalAlignment="Right" Padding="5,0,5,0" Height="25" Margin="0,0,2,0" Click="buttonInstall_Click">Install</Button>
+                        <Button x:Name="buttonRemove" HorizontalAlignment="Right" Padding="5,0,5,0" Height="25" Margin="2,0,0,0" IsEnabled="False" Click="buttonRemove_Click">Remove</Button>
                     </StackPanel>
 
 
                     <Grid Margin="0,25,0,0">
-                        <TextBlock HorizontalAlignment="Left" Text="Service Status:"></TextBlock>
-                        <TextBox x:Name="textStatus" HorizontalAlignment="Right" TextAlignment="Center" Width="100" Height="20" Text="N/A" IsReadOnly="True"></TextBox>
+                        <TextBlock HorizontalAlignment="Left" Text="Service Status:" FontSize="15"></TextBlock>
+                        <TextBox x:Name="textStatus" HorizontalAlignment="Right" TextAlignment="Center" Width="100" Height="25" VerticalContentAlignment="Center" Text="N/A" IsReadOnly="True"></TextBox>
                     </Grid>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                        <Button x:Name="buttonStart" HorizontalAlignment="Right" Padding="5,0,5,0" Margin="0,0,2,0" Click="buttonStart_Click" IsEnabled="False">Start</Button>
-                        <Button x:Name="buttonStop" HorizontalAlignment="Right" Padding="5,0,5,0" Margin="2,0,0,0" Click="buttonStop_Click" IsEnabled="False">Stop</Button>
+                        <Button x:Name="buttonStart" HorizontalAlignment="Right" Height="25" Padding="5,0,5,0" Margin="0,0,2,0" Click="buttonStart_Click" IsEnabled="False">Start</Button>
+                        <Button x:Name="buttonStop" HorizontalAlignment="Right" Height="25" Padding="5,0,5,0" Margin="2,0,0,0" Click="buttonStop_Click" IsEnabled="False">Stop</Button>
                     </StackPanel>
                 </StackPanel>
             </Grid>

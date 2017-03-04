@@ -11,24 +11,27 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto" x:Name="columnContent"/>
         </Grid.ColumnDefinitions>
-        <Rectangle x:Name="rectToggleExpanded" Grid.Column="0" Height="25" Width="25" RenderTransformOrigin="0.5,0.5" Margin="10" Cursor="Hand" MouseLeftButtonUp="rectToggleExpanded_MouseLeftButtonUp">
-            <Rectangle.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform/>
-                    <RotateTransform Angle="135"/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Rectangle.RenderTransform>
-            <Rectangle.Fill>
-                <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
-                    <GradientStop Color="#FF646464"/>
-                    <GradientStop Color="#FF646464" Offset="0.5"/>
-                    <GradientStop Color="Transparent" Offset="0.5"/>
-                    <GradientStop Offset="1" Color="Transparent"/>
-                </LinearGradientBrush>
-            </Rectangle.Fill>
-        </Rectangle>
+        <Grid x:Name="gridToggleCollapse" Grid.Column="0" Background="LightSteelBlue" Cursor="Hand" MouseLeftButtonUp="gridToggleCollapse_MouseLeftButtonUp">
+            <Rectangle x:Name="rectToggleExpanded" Grid.Column="0" Height="25" Width="25" RenderTransformOrigin="0.5,0.5" Margin="10">
+                <Rectangle.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="135"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Rectangle.RenderTransform>
+                <Rectangle.Fill>
+                    <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+                        <GradientStop Color="#FF646464"/>
+                        <GradientStop Color="#FF646464" Offset="0.5"/>
+                        <GradientStop Color="Transparent" Offset="0.5"/>
+                        <GradientStop Offset="1" Color="Transparent"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Grid>
+        
         <StackPanel x:Name="stackContent" Grid.Column="1" Width="240" Margin="15,0,0,0" VerticalAlignment="Center">
             <TextBlock FontSize="16" FontWeight="Bold" Margin="0,0,0,10">InstaTech</TextBlock>
             <TextBlock TextWrapping="NoWrap">Your screen is being viewed by a technician.</TextBlock>

@@ -53,7 +53,7 @@ namespace InstaTech_Client
 #endif
 
         const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
-        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech Client.exe";
+        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Client.exe";
         const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
 
         // ***  Variables  *** //
@@ -441,19 +441,12 @@ namespace InstaTech_Client
                                 sendFullScreenshot = true;
                                 break;
                             case "FileTransfer":
-
-                                var retrievalCode = jsonMessage.RetrievalCode.ToString();
-                                var httpRequest = new
-                                {
-                                    Type = "Download",
-                                    RetrievalCode = retrievalCode,
-                                };
-                                var httpResult = await httpClient.PostAsync(fileTransferURI, new StringContent(JsonConvert.SerializeObject(httpRequest)));
-                                var strResult = await httpResult.Content.ReadAsStringAsync();
+                                var url = jsonMessage.URL.ToString();
+                                HttpResponseMessage httpResult = await httpClient.GetAsync(url);
+                                var arrResult = await httpResult.Content.ReadAsByteArrayAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
-                                var byteFileData = Convert.FromBase64String(strResult);
                                 var di = Directory.CreateDirectory(System.IO.Path.GetTempPath() + @"\InstaTech\");
-                                File.WriteAllBytes(di.FullName + strFileName, byteFileData);
+                                File.WriteAllBytes(di.FullName + strFileName, arrResult);
                                 textFilesTransferred.Text = di.GetFiles().Length.ToString();
                                 showToolTip(textFilesTransferred, "File downloaded.", Colors.Black);
                                 break;
@@ -616,32 +609,43 @@ namespace InstaTech_Client
             {
                 return;
             }
-            
+            IntPtr hWnd = IntPtr.Zero;
+            IntPtr hDC = IntPtr.Zero;
+            IntPtr graphDC = IntPtr.Zero;
             try
             {
-                var hWnd = User32.GetDesktopWindow();
-                var hDC = User32.GetWindowDC(hWnd);
-                var graphDC = graphic.GetHdc();
+                hWnd = User32.GetDesktopWindow();
+                hDC = User32.GetWindowDC(hWnd);
+                graphDC = graphic.GetHdc();
                 var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 if (!copyResult)
                 {
+                    graphic.ReleaseHdc(graphDC);
                     graphic.Clear(System.Drawing.Color.White);
                     var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
                     graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
                 }
-                graphic.ReleaseHdc(graphDC);
-                User32.ReleaseDC(hWnd, hDC);
+                else
+                {
+                    graphic.ReleaseHdc(graphDC);
+                    User32.ReleaseDC(hWnd, hDC);
+                }
             }
             catch
             {
-                graphic.Clear(System.Drawing.Color.White);
-                var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                if (graphDC != IntPtr.Zero)
+                {
+                    graphic.ReleaseHdc(graphDC);
+                }
+                if (hDC != IntPtr.Zero)
+                {
+                    User32.ReleaseDC(hWnd, hDC);
+                }
+                return;
             }
             try
             {
                 // Get cursor information to draw on the screenshot.
-                User32.GetCursorPos(out cursorPos);
                 var ci = new User32.CursorInfo();
                 ci.cbSize = Marshal.SizeOf(ci);
                 User32.GetCursorInfo(out ci);
@@ -838,6 +842,31 @@ namespace InstaTech_Client
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
+
+        private void buttonClose_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void startUACTimer()
+        {
+            uacTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
+            {
+                if (handleUAC)
+                {
+                    var consent = Process.GetProcessesByName("Consent");
+                    if (consent.Length > 0)
+                    {
+                        foreach (var proc in consent)
+                        {
+                            proc.Kill();
+                        }
+                        System.Windows.MessageBox.Show("A UAC prompt was closed automatically.  This prevents your input from getting stuck, since this client can't interact with UAC prompts." + Environment.NewLine + Environment.NewLine + "To interact with UAC, install the service or do a one-time upgrade from the menu.", "UAC Handled", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            };
+            uacTimer.Start();
+        }
         public static void WriteToLog(Exception ex)
         {
             var exception = ex;
@@ -869,6 +898,16 @@ namespace InstaTech_Client
         public static void WriteToLog(string Message)
         {
             var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
+            if (File.Exists(path))
+            {
+                var fi = new FileInfo(path);
+                while (fi.Length > 1000000)
+                {
+                    var content = File.ReadAllLines(path);
+                    File.WriteAllLines(path, content.Skip(10));
+                    fi = new FileInfo(path);
+                }
+            }
             var jsoninfo = new
             {
                 Type = "Info",
@@ -876,31 +915,6 @@ namespace InstaTech_Client
                 Message = Message
             };
             File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
-        }
-
-        private void buttonClose_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
-
-        private void startUACTimer()
-        {
-            uacTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
-            {
-                if (handleUAC)
-                {
-                    var consent = Process.GetProcessesByName("Consent");
-                    if (consent.Length > 0)
-                    {
-                        foreach (var proc in consent)
-                        {
-                            proc.Kill();
-                        }
-                        System.Windows.MessageBox.Show("A UAC prompt was closed automatically.  This prevents your input from getting stuck, since this client can't interact with UAC prompts." + Environment.NewLine + Environment.NewLine + "To interact with UAC, install the service or do a one-time upgrade from the menu.", "UAC Handled", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
-            };
-            uacTimer.Start();
         }
     }
 }

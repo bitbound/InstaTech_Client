@@ -8,7 +8,7 @@ A screen sharing client (WPF and cross-platform) that runs on its accompanying A
 The WPF version is a small, portable EXE for Windows 8.1 and 10.  It contains the Windows Service and can be used from the command line in the same way.
 
 **Switches**
-   * -install = Installs the service and begins listening for connections.
+   * -install = Installs the service and begins accepting connections.
    * -uninstall = Uninstalls the service.
    * -update = Updates the installed service to this version.
 
@@ -18,7 +18,7 @@ The WPF version is a small, portable EXE for Windows 8.1 and 10.  It contains th
 A self-installing Windows service that will listen for connections and launch the client in the logged-on user's session.  This is embedded in the WPF client.
 
 **Switches**
-   * -install = Installs the service and begins listening for connections.
+   * -install = Installs the service and begins accepting connections.
    * -uninstall = Uninstalls the service.
    * -update = Updates the installed service to this version.
 
@@ -27,10 +27,15 @@ A self-installing Windows service that will listen for connections and launch th
 
 The cross-platform version is larger than the WPF and uses an installer.  However, it works on all versions of Windows, Linux, and Mac.  It's built with Electron (http://electron.atom.io).
 
-### Remote Control
-The WPF client and cross-platform client, when launched, will generate a random session code.  Enter that code into the web-based remote control to view the remote computer and/or take control.  I haven't yet open-sourced the server code, but I might in the future.
+### InstaTech Server
+**Compatibility:** Windows 8/10 Pro or Enterprise, Windows Server 2012+.
 
-Computers that have the Windows service will show up in the Unattended mode.  This is currently inaccessible in the demo.  A private InstaTech server is required for it.
+The source code for the InstaTech Server is not made public.  However, you can download a trial version at https://instatech.org/Downloads.
+
+### Remote Control
+The WPF client and cross-platform client, when launched, will generate a random session code.  Enter that code into the web-based remote control to view the remote computer and/or take control.
+
+Computers that have the Windows service will show up in the Unattended mode and the Computer Hub of the InstaTech Server.
 
 The remote control tool is currently located at https://demo.instatech.org/Remote_Control.
 

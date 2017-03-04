@@ -1193,6 +1193,14 @@ namespace Win32_Classes
         public static extern UIntPtr GetMessageExtraInfo();
         [DllImport("sas.dll")]
         public static extern void SendSAS(bool AsUser);
+        [DllImport("user32.dll")]
+        public static extern bool OpenClipboard(IntPtr hWnd);
+        [DllImport("user32.dll")]
+        public static extern bool EmptyClipboard();
+        [DllImport("user32.dll")]
+        public static extern bool CloseClipboard();
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetClipboardData(int Format, IntPtr hMem);
 
         #endregion
 

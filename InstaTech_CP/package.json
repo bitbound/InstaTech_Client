@@ -18,8 +18,7 @@
   "scripts": {
     "start": "electron ./app",
     "build": "build",
-    "rebuild": "npm rebuild --runtime=electron --target=1.6.0 --disturl=https://atom.io/download/atom-shell --abi=48",
-    "postinstall": "install-app-deps"
+    "rebuild": "npm rebuild --runtime=electron --target=1.6.0 --disturl=https://atom.io/download/atom-shell --abi=48"
   },
   "files": [
     "main.js",
