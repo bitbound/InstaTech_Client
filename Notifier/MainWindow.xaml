@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Notifier"
         mc:Ignorable="d"
-        Title="Notifier" Height="75" Width="300" WindowStyle="None" ShowInTaskbar="False" Topmost="True" Loaded="Window_Loaded" Background="LightSteelBlue" ResizeMode="NoResize" SizeToContent="Width">
+  Title="Notifier" Height="75" Width="300" WindowStyle="None" ShowInTaskbar="False" Topmost="True" Loaded="Window_Loaded" Background="LightSteelBlue" ResizeMode="NoResize" SizeToContent="Width">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -31,7 +31,7 @@
                 </Rectangle.Fill>
             </Rectangle>
         </Grid>
-        
+
         <StackPanel x:Name="stackContent" Grid.Column="1" Width="240" Margin="15,0,0,0" VerticalAlignment="Center">
             <TextBlock FontSize="16" FontWeight="Bold" Margin="0,0,0,10">InstaTech</TextBlock>
             <TextBlock TextWrapping="NoWrap">Your screen is being viewed by a technician.</TextBlock>

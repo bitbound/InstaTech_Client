@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{927A919A-58EC-45FC-9759-22FF4DCAD676}</ProjectGuid>
+    <ProjectGuid>{9E4495CC-E3C8-465A-BD8A-B172A379C656}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Notifier</RootNamespace>
     <AssemblyName>Notifier</AssemblyName>
@@ -18,7 +18,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>true</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>

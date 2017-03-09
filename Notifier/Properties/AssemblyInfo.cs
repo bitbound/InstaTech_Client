@@ -12,8 +12,8 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Translucency")]
 [assembly: AssemblyProduct("Notifier")]
-[assembly: AssemblyCopyright("Copyright ©  2017 Translucency.  All rights reserved.")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyTrademark("Copyright ©  2017 Translucency.  All rights reserved.")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
@@ -53,5 +53,5 @@ using System.Windows;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: Guid("07fdcdcc-82d4-4c15-9698-e175e94b9f51")]
+[assembly: Guid("9f651758-7461-4564-8d82-cc66d97ede2e")]
 

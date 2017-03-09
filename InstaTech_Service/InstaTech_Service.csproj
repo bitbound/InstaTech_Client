@@ -155,6 +155,7 @@
     <Error Condition="!Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.4\build\dotnet\Fody.targets'))" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>copy "C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\Notifier\bin\$(ConfigurationName)\Notifier.exe" "C:\Users\Typic\Documents\Source\Projects\InstaTech_Client\InstaTech_Service\Resources\Notifier.exe" /y</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
 </Project>
