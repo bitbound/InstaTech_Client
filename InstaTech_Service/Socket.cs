@@ -497,7 +497,7 @@ namespace InstaTech_Service
                                 string command = jsonMessage.Command.ToString();
                                 if (jsonMessage.Language.ToString() == "PowerShell")
                                 {
-                                    psi2 = new ProcessStartInfo("powershell.exe", "-executionpolicy bypass -Command \"\"& {" + Encoding.UTF8.GetString(Convert.FromBase64String(command)) + "}\"\"");
+                                    psi2 = new ProcessStartInfo("powershell.exe", "-executionpolicy bypass -Command \"\"& {" + Encoding.UTF8.GetString(Convert.FromBase64String(command)).Replace("\"", "\"\"\"") + "}\"\"");
                                 }
                                 else if (jsonMessage.Language.ToString() == "Batch")
                                 {
