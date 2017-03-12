@@ -42,15 +42,15 @@ namespace InstaTech_Service
         const string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
         // ***  Variables  *** //
-        static ClientWebSocket socket { get; set; }
-        static HttpClient httpClient { get; set; } = new HttpClient();
-        static Bitmap screenshot { get; set; }
-        static Bitmap lastFrame { get; set; }
-        static Bitmap croppedFrame { get; set; }
-        static string ConnectionType { get; set; }
+        static ClientWebSocket socket;
+        static HttpClient httpClient = new HttpClient();
+        static Bitmap screenshot;
+        static Bitmap lastFrame;
+        static Bitmap croppedFrame;
+        static string ConnectionType;
         static byte[] newData;
-        static System.Drawing.Rectangle boundingBox { get; set; }
-        static Graphics graphic { get; set; }
+        static System.Drawing.Rectangle boundingBox;
+        static Graphics graphic;
         static bool capturing = false;
         static int totalHeight = 0;
         static int totalWidth = 0;
@@ -65,7 +65,12 @@ namespace InstaTech_Service
         static System.Timers.Timer idleTimer = new System.Timers.Timer(5000);
         static System.Timers.Timer heartbeatTimer = new System.Timers.Timer(3600000);
         static Process deployProc;
-        static dynamic deployFileRequest { get; set; }
+        static Process psProcess;
+        static Process cmdProcess;
+        static dynamic deployFileRequest;
+        static List<ArraySegment<Byte>> socketSendBuffer = new List<ArraySegment<byte>>();
+
+
         public static async Task StartInteractive()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -117,8 +122,6 @@ namespace InstaTech_Service
 
             await HandleInteractiveSocket();
         }
-
-
         public static async void StartService()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -484,38 +487,126 @@ namespace InstaTech_Service
                                 }
                                 psi.RedirectStandardOutput = true;
                                 psi.UseShellExecute = false;
-                                
-                                deployProc = Process.Start(psi);
-                                deployFileRequest.Output += deployProc.StandardOutput.ReadToEnd();
-                                deployProc.WaitForExit();
-                                deployFileRequest.Status = "ok";
-                                deployFileRequest.ExitCode = deployProc.ExitCode;
-                                SocketSend(deployFileRequest);
+                                deployProc = new Process();
+                                deployProc.StartInfo = psi;
+                                deployProc.EnableRaisingEvents = true;
+                                deployProc.OutputDataReceived += (object sender, DataReceivedEventArgs args) =>
+                                {
+                                    deployFileRequest.Output += args.Data + Environment.NewLine;
+                                };
+                                deployProc.Exited += async (object sender, EventArgs e) =>
+                                {
+                                    deployFileRequest.Status = "ok";
+                                    deployFileRequest.ExitCode = deployProc.ExitCode;
+                                    await SocketSend(deployFileRequest);
+                                };
+                                deployProc.Start();
+                                deployProc.BeginOutputReadLine();
                                 break;
                             case "ConsoleCommand":
-                                ProcessStartInfo psi2;
-                                string command = jsonMessage.Command.ToString();
+                                string command = Encoding.UTF8.GetString(Convert.FromBase64String(jsonMessage.Command.ToString()));
                                 if (jsonMessage.Language.ToString() == "PowerShell")
                                 {
-                                    psi2 = new ProcessStartInfo("powershell.exe", "-executionpolicy bypass -Command \"\"& {" + Encoding.UTF8.GetString(Convert.FromBase64String(command)).Replace("\"", "\"\"\"") + "}\"\"");
+                                    if (psProcess == null || psProcess.HasExited)
+                                    {
+                                        var psi2 = new ProcessStartInfo("powershell.exe", "-noexit -executionpolicy bypass -Command \"\"& {" + command.Replace("\"", "\"\"\"") + "}\"\"");
+                                        psi2.RedirectStandardOutput = true;
+                                        psi2.RedirectStandardInput = true;
+                                        psi2.RedirectStandardError = true;
+                                        psi2.UseShellExecute = false;
+                                        psi2.WorkingDirectory = Path.GetPathRoot(Environment.SystemDirectory);
+                                        psProcess = new Process();
+                                        psProcess.StartInfo = psi2;
+                                        psProcess.EnableRaisingEvents = true;
+
+                                        psProcess.OutputDataReceived += async (object sender, DataReceivedEventArgs args) =>
+                                        {
+                                            jsonMessage.Status = "ok";
+                                            jsonMessage.Output = args.Data;
+                                            await SocketSend(jsonMessage);
+
+                                        };
+                                        psProcess.ErrorDataReceived += async (object sender, DataReceivedEventArgs args) =>
+                                        {
+                                            jsonMessage.Status = "ok";
+                                            jsonMessage.Output = args.Data;
+                                            await SocketSend(jsonMessage);
+
+                                        };
+                                        psProcess.Start();
+                                        psProcess.BeginOutputReadLine();
+                                        psProcess.BeginErrorReadLine();
+                                    }
+                                    else
+                                    {
+                                        psProcess.StandardInput.WriteLine(command);
+                                    }
                                 }
                                 else if (jsonMessage.Language.ToString() == "Batch")
                                 {
-                                    psi2 = new ProcessStartInfo("cmd.exe", "/c " + Encoding.UTF8.GetString(Convert.FromBase64String(command)));
+                                    if (cmdProcess == null || cmdProcess.HasExited)
+                                    {
+                                        var psi2 = new ProcessStartInfo("cmd.exe", "/k " + command);
+                                        psi2.RedirectStandardOutput = true;
+                                        psi2.RedirectStandardInput = true;
+                                        psi2.RedirectStandardError = true;
+                                        psi2.UseShellExecute = false;
+                                        psi2.WorkingDirectory = Path.GetPathRoot(Environment.SystemDirectory);
+
+                                        cmdProcess = new Process();
+                                        cmdProcess.StartInfo = psi2;
+                                        cmdProcess.EnableRaisingEvents = true;
+                                        cmdProcess.OutputDataReceived += async (object sender, DataReceivedEventArgs args) =>
+                                        {
+                                            jsonMessage.Status = "ok";
+                                            jsonMessage.Output = args.Data;
+                                            await SocketSend(jsonMessage);
+
+                                        };
+                                        cmdProcess.ErrorDataReceived += async (object sender, DataReceivedEventArgs args) =>
+                                        {
+                                            jsonMessage.Status = "ok";
+                                            jsonMessage.Output = args.Data;
+                                            await SocketSend(jsonMessage);
+                                        };
+                                        cmdProcess.Start();
+                                        cmdProcess.BeginOutputReadLine();
+                                        cmdProcess.BeginErrorReadLine();
+                                    }
+                                    else
+                                    {
+                                        cmdProcess.StandardInput.WriteLine(command);
+                                    }
                                 }
                                 else
                                 {
                                     return;
                                 }
-                                psi2.RedirectStandardOutput = true;
-                                psi2.UseShellExecute = false;
-
-                                var consoleProc = Process.Start(psi2);
-                                jsonMessage.Output += consoleProc.StandardOutput.ReadToEnd();
-                                consoleProc.WaitForExit();
+                                
+                                break;
+                            case "NewConsole":
+                                if (jsonMessage.Language.ToString() == "PowerShell")
+                                {
+                                    if (psProcess != null && !psProcess.HasExited)
+                                    {
+                                        psProcess.CancelOutputRead();
+                                        psProcess.CancelErrorRead();
+                                        psProcess.Close();
+                                    }
+                                    psProcess = null;
+                                }
+                                else if (jsonMessage.Language.ToString() == "Batch")
+                                {
+                                    if (cmdProcess != null && !cmdProcess.HasExited)
+                                    {
+                                        cmdProcess.CancelOutputRead();
+                                        cmdProcess.CancelErrorRead();
+                                        cmdProcess.Close();
+                                    }
+                                    cmdProcess = null;
+                                }
                                 jsonMessage.Status = "ok";
-                                jsonMessage.ExitCode = consoleProc.ExitCode;
-                                SocketSend(jsonMessage);
+                                await SocketSend(jsonMessage);
                                 break;
                             default:
                                 break;
@@ -538,7 +629,7 @@ namespace InstaTech_Service
                     Environment.Exit(1);
                 }
                 WriteToLog(ex);
-                await InitWebSocket();
+                Environment.Exit(1);
             }
         }
 
@@ -821,7 +912,24 @@ namespace InstaTech_Service
         {
             var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
-            await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            socketSendBuffer.Add(outBuffer);
+            if (socketSendBuffer.Count > 1)
+            {
+                return;
+            }
+            while (socketSendBuffer.Count > 0)
+            {
+                try
+                {
+                    await socket.SendAsync(socketSendBuffer[0], WebSocketMessageType.Text, true, CancellationToken.None);
+                    socketSendBuffer.RemoveAt(0);
+                }
+                catch (Exception ex)
+                {
+                    socketSendBuffer.Clear();
+                    throw ex;
+                }
+            }
         }
         static private async Task CheckForUpdates()
         {
