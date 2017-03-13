@@ -38,7 +38,7 @@ namespace InstaTech_Service
         const string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 #endif
         const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
-        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech Client.exe";
+        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Service.exe";
         const string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
         // ***  Variables  *** //
