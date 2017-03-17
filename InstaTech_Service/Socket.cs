@@ -245,7 +245,7 @@ namespace InstaTech_Service
                                 User32.CloseClipboard();
                                 break;
                             case "MouseMove":
-                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
+                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * totalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * totalHeight) + offsetY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")

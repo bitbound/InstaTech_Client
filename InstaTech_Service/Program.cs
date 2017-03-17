@@ -53,6 +53,22 @@ namespace InstaTech_Service
                         }
                     }
                     File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, installPath, true);
+
+                    foreach (var proc in Process.GetProcessesByName("Notifier"))
+                    {
+                        proc.Kill();
+                    }
+                    while (File.Exists(Path.Combine(di.FullName, "Notifier.exe")))
+                    {
+                        try
+                        {
+                            File.Delete(Path.Combine(di.FullName, "Notifier.exe"));
+                        }
+                        catch
+                        {
+                            System.Threading.Thread.Sleep(500);
+                        }
+                    }
                     using (var rs = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("InstaTech_Service.Resources.Notifier.exe"))
                     {
                         using (var fs = new FileStream(Path.Combine(di.FullName, "Notifier.exe"), FileMode.Create))
