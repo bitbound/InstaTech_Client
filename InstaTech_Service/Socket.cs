@@ -146,7 +146,16 @@ namespace InstaTech_Service
         {
    
             socket = new ClientWebSocket();
-            await socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
+            try
+            {
+                await socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
+            }
+            catch
+            {
+                await Task.Delay(600000);
+                await InitWebSocket();
+                return;
+            }
             var uptime = new PerformanceCounter("System", "System Up Time", true);
             uptime.NextValue();
             var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
@@ -964,7 +973,7 @@ namespace InstaTech_Service
                 Socket.WriteToLog("Update download initiated.");
                 await webClient.DownloadFileTaskAsync(new Uri(Socket.downloadURI), strFilePath);
                 Socket.WriteToLog("Download complete.  Launching file.");
-                Process.Start(strFilePath, "-update");
+                Process.Start(strFilePath, "-install");
                 Environment.Exit(0);
                 return;
             }

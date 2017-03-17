@@ -28,10 +28,31 @@ namespace InstaTech_Service
             }
             else if (args.Exists(str=>str.ToLower() == "-install"))
             {
-                var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + @"\InstaTech\");
                 try
                 {
-                    File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location), true);
+
+                    Socket.WriteToLog("Install initiated.");
+                    Process.Start("cmd.exe", "/c sc delete instatech_service").WaitForExit();
+                    var procs = Process.GetProcessesByName("InstaTech_Service").Where(proc => proc.Id != Process.GetCurrentProcess().Id);
+                    foreach (var proc in procs)
+                    {
+                        proc.Kill();
+                    }
+
+                    var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + @"\InstaTech\");
+                    var installPath = di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                    while (File.Exists(installPath))
+                    {
+                        try
+                        {
+                            File.Delete(installPath);
+                        }
+                        catch
+                        {
+                            System.Threading.Thread.Sleep(500);
+                        }
+                    }
+                    File.Copy(System.Reflection.Assembly.GetExecutingAssembly().Location, installPath, true);
                     using (var rs = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("InstaTech_Service.Resources.Notifier.exe"))
                     {
                         using (var fs = new FileStream(Path.Combine(di.FullName, "Notifier.exe"), FileMode.Create))
@@ -41,81 +62,79 @@ namespace InstaTech_Service
                             rs.Close();
                         }
                     }
-                }
-                catch { }
-                
 
-                var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                if (serv == null)
-                {
-                    string[] command;
-                    if (args.Exists(str => str.ToLower() == "-once"))
+                    var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
+                    if (serv == null)
                     {
-                        command = new String[] { "/assemblypath=\"" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "\" -once" };
+                        string[] command;
+                        if (args.Exists(str => str.ToLower() == "-once"))
+                        {
+                            command = new String[] { "/assemblypath=\"" + installPath + "\" -once" };
+                        }
+                        else
+                        {
+                            command = new String[] { "/assemblypath=" + installPath };
+                        }
+                        ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
+                        InstallContext Context = new InstallContext("", command);
+                        ServiceInstallerObj.Context = Context;
+                        ServiceInstallerObj.DisplayName = "InstaTech Service";
+                        ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
+                        ServiceInstallerObj.ServiceName = "InstaTech_Service";
+                        ServiceInstallerObj.StartType = ServiceStartMode.Automatic;
+                        ServiceInstallerObj.DelayedAutoStart = true;
+                        ServiceInstallerObj.Parent = new ServiceProcessInstaller();
+
+                        System.Collections.Specialized.ListDictionary state = new System.Collections.Specialized.ListDictionary();
+                        ServiceInstallerObj.Install(state);
                     }
-                    else
+                    serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
+                    if (serv != null && serv.Status != ServiceControllerStatus.Running)
                     {
-                        command = new String[] { "/assemblypath=" + di.FullName + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location) };
+                        serv.Start();
                     }
-                    ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
-                    InstallContext Context = new InstallContext("", command);
-                    ServiceInstallerObj.Context = Context;
-                    ServiceInstallerObj.DisplayName = "InstaTech Service";
-                    ServiceInstallerObj.Description = "Background service that accepts connections for the InstaTech Client.";
-                    ServiceInstallerObj.ServiceName = "InstaTech_Service";
-                    ServiceInstallerObj.StartType = ServiceStartMode.Automatic;
-                    ServiceInstallerObj.DelayedAutoStart = true;
-                    ServiceInstallerObj.Parent = new ServiceProcessInstaller();
+                    var psi = new ProcessStartInfo("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
+                    psi.WindowStyle = ProcessWindowStyle.Hidden;
+                    Process.Start(psi);
 
-                    System.Collections.Specialized.ListDictionary state = new System.Collections.Specialized.ListDictionary();
-                    ServiceInstallerObj.Install(state);
+                    // Set Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
+                    var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
+                    subkey.SetValue("SoftwareSASGeneration", "3", Microsoft.Win32.RegistryValueKind.DWord);
+                    Socket.WriteToLog("Install completed.");
+                    Environment.Exit(0);
                 }
-                serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                if (serv != null && serv.Status != ServiceControllerStatus.Running)
+                catch (Exception ex)
                 {
-                    serv.Start();
+                    Socket.WriteToLog(ex);
+                    Environment.Exit(1);
                 }
-                var psi = new ProcessStartInfo("cmd.exe", "/c sc.exe failure \"InstaTech_Service\" reset=5 actions=restart/5000");
-                psi.WindowStyle = ProcessWindowStyle.Hidden;
-                Process.Start(psi);
-
-                // Set Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
-                var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
-                subkey.SetValue("SoftwareSASGeneration", "3", Microsoft.Win32.RegistryValueKind.DWord);
             }
             else if (args.Exists(str => str.ToLower() == "-uninstall"))
             {
-                var serv = ServiceController.GetServices().FirstOrDefault(ser => ser.ServiceName == "InstaTech_Service");
-                if (serv != null)
+                try
                 {
-                    serv.Stop();
-                    ServiceInstaller ServiceInstallerObj = new ServiceInstaller();
-                    ServiceInstallerObj.Context = new InstallContext("", null); ;
-                    ServiceInstallerObj.ServiceName = "InstaTech_Service";
-                    ServiceInstallerObj.Uninstall(null);
+                    Socket.WriteToLog("Uninstall initiated.");
+                    Process.Start("cmd.exe", "/c sc delete instatech_service").WaitForExit();
+                    var procs = Process.GetProcessesByName("InstaTech_Service").Where(proc => proc.Id != Process.GetCurrentProcess().Id);
+                    foreach (var proc in procs)
+                    {
+                        proc.Kill();
+                    }
+
+                    // Remove Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
+                    var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
+                    if (subkey.GetValue("SoftwareSASGeneration") != null)
+                    {
+                        subkey.DeleteValue("SoftwareSASGeneration");
+                    }
+                    Socket.WriteToLog("Uninstall completed.");
+                    Environment.Exit(0);
                 }
-                
-                // Remove Secure Attention Sequence policy to allow app to simulate Ctrl + Alt + Del.
-                var subkey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", true);
-                if (subkey.GetValue("SoftwareSASGeneration") != null)
+                catch (Exception ex)
                 {
-                    subkey.DeleteValue("SoftwareSASGeneration");
+                    Socket.WriteToLog(ex);
+                    Environment.Exit(1);
                 }
-                Environment.Exit(0);
-            }
-            else if (args.Exists(str => str.ToLower() == "-update"))
-            {
-                Socket.WriteToLog("Update install initiated.");
-                var procs = Process.GetProcessesByName("InstaTech_Service").Where(proc => proc.Id != Process.GetCurrentProcess().Id);
-                foreach (var proc in procs)
-                {
-                    proc.Kill();
-                }
-                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-uninstall").WaitForExit();
-                Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "-install");
-                Socket.WriteToLog("Update completed.");
-                Environment.Exit(0);
-                return;
             }
             else
             {

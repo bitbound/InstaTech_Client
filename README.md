@@ -8,9 +8,8 @@ A screen sharing client (WPF and cross-platform) that runs on its accompanying A
 The WPF version is a small, portable EXE for Windows 8.1 and 10.  It contains the Windows Service and can be used from the command line in the same way.
 
 **Switches**
-   * -install = Installs the service and begins accepting connections.
+   * -install = Installs (or updates) the service and begins accepting connections.
    * -uninstall = Uninstalls the service.
-   * -update = Updates the installed service to this version.
 
 ### Windows Service Client (/InstaTech_Service/)
 **Compatibility:** Windows 8.1 and 10.
