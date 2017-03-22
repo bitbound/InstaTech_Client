@@ -223,6 +223,9 @@ namespace InstaTech_Service
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
                                 break;
+                            case "FrameReceived":
+                                SendFrame();
+                                break;
                             case "FileTransfer":
                                 var url = jsonMessage.URL.ToString();
                                 HttpResponseMessage httpResult = await httpClient.GetAsync(url);
@@ -662,15 +665,11 @@ namespace InstaTech_Service
             // Return non-empty bytes.
             return bytes.Take(firstZero).ToArray();
         }
-        static private async void BeginScreenCapture()
+        static private void BeginScreenCapture()
         {
             capturing = true;
             sendFullScreenshot = true;
-            while (capturing == true)
-            {
-                SendFrame();
-                await Task.Delay(25);
-            }
+            SendFrame();
         }
         static async private void SendFrame()
         {
@@ -678,106 +677,98 @@ namespace InstaTech_Service
             {
                 return;
             }
-
-            try
+            var hWnd = User32.GetDesktopWindow();
+            var hDC = User32.GetWindowDC(hWnd);
+            var graphDC = graphic.GetHdc();
+            var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+            // Switch desktop if copy fails.
+            if (!copyResult)
             {
-                var hWnd = User32.GetDesktopWindow();
-                var hDC = User32.GetWindowDC(hWnd);
-                var graphDC = graphic.GetHdc();
-                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
-                // Switch desktop if copy fails.
-                if (!copyResult)
-                {
-                    graphic.ReleaseHdc(graphDC);
-                    User32.ReleaseDC(hWnd, hDC);
-                    WriteToLog("Desktop switch initiated.");
-                    var deskName = User32.GetCurrentDesktop();
-                    var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                    if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
-                    {
-                        var request = new
-                        {
-                            Type = "DesktopSwitch",
-                            Status = "pending",
-                            ComputerName = Environment.MachineName
-                        };
-                        await SocketSend(request);
-                        capturing = false;
-                    }
-                    else
-                    {
-                        graphic.Clear(System.Drawing.Color.White);
-                        var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                        graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
-                        var error = Marshal.GetLastWin32Error();
-                        WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
-                    }
-                }
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
-            }
-            catch
-            {
-                graphic.Clear(Color.White);
-                var font = new Font(FontFamily.GenericSansSerif, 30, FontStyle.Bold);
-                graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
-            }
-            try
-            {
-                // Get cursor information to draw on the screenshot.
-                User32.GetCursorPos(out cursorPos);
-                var ci = new User32.CursorInfo();
-                ci.cbSize = Marshal.SizeOf(ci);
-                User32.GetCursorInfo(out ci);
-                if (ci.flags == User32.CURSOR_SHOWING)
-                {
-                    using (var icon = Icon.FromHandle(ci.hCursor))
-                    {
-                        graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
-                    }
-                }
-                if (sendFullScreenshot)
+                WriteToLog("Desktop switch initiated.");
+                var deskName = User32.GetCurrentDesktop();
+                var procInfo = new ADVAPI32.PROCESS_INFORMATION();
+                if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
                 {
                     var request = new
                     {
-                        Type = "Bounds",
-                        Width = totalWidth,
-                        Height = totalHeight
+                        Type = "DesktopSwitch",
+                        Status = "pending",
+                        ComputerName = Environment.MachineName
                     };
                     await SocketSend(request);
-                    using (var ms = new MemoryStream())
-                    {
-                        screenshot.Save(ms, ImageFormat.Jpeg);
-                        ms.WriteByte(0);
-                        ms.WriteByte(0);
-                        ms.WriteByte(0);
-                        ms.WriteByte(0);
-                        await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
-                        sendFullScreenshot = false;
-                        return;
-                    }
+                    capturing = false;
                 }
-                newData = GetChangedPixels(screenshot, lastFrame);
-                if (newData != null)
+                else
                 {
-                    using (var ms = new MemoryStream())
-                    {
-                        croppedFrame = screenshot.Clone(boundingBox, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        croppedFrame.Save(ms, ImageFormat.Jpeg);
-                        // Add x,y coordinates of top-left of image so receiver knows where to draw it.
-                        foreach (var metaByte in newData)
-                        {
-                            ms.WriteByte(metaByte);
-                        }
-                        await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
-                    }
+                    graphic.Clear(System.Drawing.Color.White);
+                    var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                    graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                    var error = Marshal.GetLastWin32Error();
+                    WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
                 }
-                lastFrame = (Bitmap)screenshot.Clone();
             }
-            catch (Exception ex)
+            graphic.ReleaseHdc(graphDC);
+            User32.ReleaseDC(hWnd, hDC);
+
+            // Get cursor information to draw on the screenshot.
+            User32.GetCursorPos(out cursorPos);
+            var ci = new User32.CursorInfo();
+            ci.cbSize = Marshal.SizeOf(ci);
+            User32.GetCursorInfo(out ci);
+            if (ci.flags == User32.CURSOR_SHOWING)
             {
-                WriteToLog(ex);
+                using (var icon = Icon.FromHandle(ci.hCursor))
+                {
+                    graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
+                }
             }
+            if (sendFullScreenshot)
+            {
+                var request = new
+                {
+                    Type = "Bounds",
+                    Width = totalWidth,
+                    Height = totalHeight
+                };
+                await SocketSend(request);
+                using (var ms = new MemoryStream())
+                {
+                    screenshot.Save(ms, ImageFormat.Jpeg);
+                    ms.WriteByte(0);
+                    ms.WriteByte(0);
+                    ms.WriteByte(0);
+                    ms.WriteByte(0);
+                    await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
+                    sendFullScreenshot = false;
+                    return;
+                }
+            }
+            newData = GetChangedPixels(screenshot, lastFrame);
+            if (newData == null)
+            {
+                await Task.Delay(100);
+                // Ignore async warning here since it's intentional.  This is to prevent deadlock.
+#pragma warning disable
+                SendFrame();
+#pragma warning restore
+            }
+            else
+            {
+                using (var ms = new MemoryStream())
+                {
+                    croppedFrame = screenshot.Clone(boundingBox, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    croppedFrame.Save(ms, ImageFormat.Jpeg);
+                    // Add x,y coordinates of top-left of image so receiver knows where to draw it.
+                    foreach (var metaByte in newData)
+                    {
+                        ms.WriteByte(metaByte);
+                    }
+                    await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
+                }
+            }
+            lastFrame = (Bitmap)screenshot.Clone();
         }
         static public async Task SendHeartbeat()
         {

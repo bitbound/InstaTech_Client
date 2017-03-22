@@ -57,14 +57,15 @@ namespace InstaTech_Client
         const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
 
         // ***  Variables  *** //
-        ClientWebSocket socket { get; set; }
-        HttpClient httpClient = new HttpClient();
-        Bitmap screenshot { get; set; }
-        Bitmap lastFrame { get; set; }
-        Bitmap croppedFrame { get; set; }
-        byte[] newData;
-        System.Drawing.Rectangle boundingBox { get; set; }
-        Graphics graphic { get; set; }
+        ClientWebSocket Socket { get; set; }
+        HttpClient HttpClient { get; set; } = new HttpClient();
+        Bitmap Screenshot { get; set; }
+        Bitmap LastFrame { get; set; }
+        Bitmap CroppedFrame { get; set; }
+        byte[] NewData { get; set; }
+        System.Drawing.Rectangle BoundingBox { get; set; }
+        Graphics Graphic { get; set; }
+        System.Timers.Timer UacTimer { get; set; } = new System.Timers.Timer(3000);
         bool capturing = false;
         int totalHeight = 0;
         int totalWidth = 0;
@@ -76,15 +77,14 @@ namespace InstaTech_Client
         System.Drawing.Point cursorPos;
         bool sendFullScreenshot = true;
         bool handleUAC = true;
-        System.Timers.Timer uacTimer = new System.Timers.Timer(3000);
 
         public MainWindow()
         {
             InitializeComponent();
             Current = this;
             App.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
-            checkArgs(Environment.GetCommandLineArgs().ToList());
-            startUACTimer();
+            CheckArgs(Environment.GetCommandLineArgs().ToList());
+            StartUACTimer();
         }
 
 
@@ -108,16 +108,16 @@ namespace InstaTech_Client
                 return;
             }
 
-            initWebSocket();
+            InitWebSocket();
 
             // Initialize variables requiring screen dimensions.
             totalWidth = SystemInformation.VirtualScreen.Width;
             totalHeight = SystemInformation.VirtualScreen.Height;
             offsetX = SystemInformation.VirtualScreen.Left;
             offsetY = SystemInformation.VirtualScreen.Top;
-            screenshot = new Bitmap(totalWidth, totalHeight);
-            lastFrame = new Bitmap(totalWidth, totalHeight);
-            graphic = Graphics.FromImage(screenshot);
+            Screenshot = new Bitmap(totalWidth, totalHeight);
+            LastFrame = new Bitmap(totalWidth, totalHeight);
+            Graphic = Graphics.FromImage(Screenshot);
 
             // Clean up temp files from previous file transfers.
             var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
@@ -125,7 +125,7 @@ namespace InstaTech_Client
             {
                 di.Delete(true);
             }
-            await checkForUpdates(true);
+            await CheckForUpdates(true);
         }
         private void Current_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
@@ -168,7 +168,7 @@ namespace InstaTech_Client
         {
             System.Windows.Clipboard.SetText(textSessionID.Text);
             textSessionID.SelectAll();
-            showToolTip(textSessionID, "Copied to clipboard!", Colors.Green);
+            ShowToolTip(textSessionID, "Copied to clipboard!", Colors.Green);
             
         }
         private void buttonMenu_Click(object sender, RoutedEventArgs e)
@@ -181,7 +181,7 @@ namespace InstaTech_Client
             if (capturing)
             {
                 capturing = false;
-                socket.Dispose();
+                Socket.Dispose();
                 stackMain.Visibility = Visibility.Collapsed;
                 stackReconnect.Visibility = Visibility.Visible;
             }
@@ -196,7 +196,7 @@ namespace InstaTech_Client
             }
             else
             {
-                showToolTip(textFilesTransferred, "No files available.", Colors.Black);
+                ShowToolTip(textFilesTransferred, "No files available.", Colors.Black);
             }
         }
         private async void menuUpgrade_Click(object sender, RoutedEventArgs e)
@@ -225,7 +225,7 @@ namespace InstaTech_Client
             var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-install -once");
             psi.WindowStyle = ProcessWindowStyle.Hidden;
             Process.Start(psi);
-            await socketSend(new {
+            await SocketSend(new {
                 Type = "ConnectUpgrade",
                 ComputerName = Environment.MachineName
             });
@@ -255,10 +255,10 @@ namespace InstaTech_Client
         {
             stackReconnect.Visibility = Visibility.Collapsed;
             stackMain.Visibility = Visibility.Visible;
-            initWebSocket();
+            InitWebSocket();
         }
 
-        private async void showToolTip(FrameworkElement placementTarget, string message, System.Windows.Media.Color fontColor)
+        private async void ShowToolTip(FrameworkElement placementTarget, string message, System.Windows.Media.Color fontColor)
         {
             var tt = new System.Windows.Controls.ToolTip();
             tt.PlacementTarget = placementTarget;
@@ -275,11 +275,11 @@ namespace InstaTech_Client
             tt = null;
         }
 
-        private async void initWebSocket()
+        private async void InitWebSocket()
         {
             try
             {
-                socket = new ClientWebSocket();
+                Socket = new ClientWebSocket();
             }
             catch (Exception ex)
             {
@@ -289,7 +289,7 @@ namespace InstaTech_Client
             }
             try
             {
-                await socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
+                await Socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
             }
             catch (Exception ex)
             {
@@ -304,10 +304,10 @@ namespace InstaTech_Client
                 ConnectionType = "ClientApp",
                 ComputerName = Environment.MachineName,
             };
-            await socketSend(request);
-            handleSocket();
+            await SocketSend(request);
+            HandleSocket();
         }
-        private void checkArgs(List<string> args)
+        private void CheckArgs(List<string> args)
         {
             if (args.Exists(arg=>arg.Trim().ToLower() == "-install"))
             {
@@ -388,7 +388,7 @@ namespace InstaTech_Client
                 return;
             }
         }
-        private async void handleSocket()
+        private async void HandleSocket()
         {
             try
             {
@@ -396,13 +396,13 @@ namespace InstaTech_Client
                 WebSocketReceiveResult result;
                 string trimmedString = "";
                 dynamic jsonMessage = null;
-                while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
+                while (Socket.State == WebSocketState.Connecting || Socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
-                    result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+                    result = await Socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(trimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
                         jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
 
                         switch ((string)jsonMessage.Type)
@@ -413,7 +413,7 @@ namespace InstaTech_Client
                                 textSessionID.FontWeight = FontWeights.Bold;
                                 break;
                             case "CaptureScreen":
-                                beginScreenCapture();
+                                BeginScreenCapture();
                                 break;
                             case "RTCOffer":
                                 var request = new
@@ -421,7 +421,7 @@ namespace InstaTech_Client
                                     Type = "RTCOffer",
                                     ConnectionType = "Denied",
                                 };
-                                await socketSend(request);
+                                await SocketSend(request);
                                 break;
                             case "ConnectUpgrade":
                                 if (jsonMessage.Status == "timeout")
@@ -440,23 +440,26 @@ namespace InstaTech_Client
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
                                 break;
+                            case "FrameReceived":
+                                await SendFrame();
+                                break;
                             case "FileTransfer":
                                 var url = jsonMessage.URL.ToString();
-                                HttpResponseMessage httpResult = await httpClient.GetAsync(url);
+                                HttpResponseMessage httpResult = await HttpClient.GetAsync(url);
                                 var arrResult = await httpResult.Content.ReadAsByteArrayAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
                                 var di = Directory.CreateDirectory(System.IO.Path.GetTempPath() + @"\InstaTech\");
                                 File.WriteAllBytes(di.FullName + strFileName, arrResult);
                                 textFilesTransferred.Text = di.GetFiles().Length.ToString();
-                                showToolTip(textFilesTransferred, "File downloaded.", Colors.Black);
+                                ShowToolTip(textFilesTransferred, "File downloaded.", Colors.Black);
                                 break;
                             case "SendClipboard":
                                 byte[] arrData = Convert.FromBase64String(jsonMessage.Data.ToString());
                                 System.Windows.Clipboard.SetText(Encoding.UTF8.GetString(arrData));
-                                showToolTip(buttonMenu, "Clipboard data set.", Colors.Green);
+                                ShowToolTip(buttonMenu, "Clipboard data set.", Colors.Green);
                                 break;
                             case "MouseMove":
-                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY, totalWidth, totalHeight, offsetX, offsetY);
+                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * totalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * totalHeight) + offsetY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
@@ -543,9 +546,19 @@ namespace InstaTech_Client
                                 break;
                             case "PartnerClose":
                                 capturing = false;
+                                stackMain.Visibility = Visibility.Collapsed;
+                                stackReconnect.Visibility = Visibility.Visible;
+                                textAgentStatus.FontWeight = FontWeights.Normal;
+                                textAgentStatus.Foreground = new SolidColorBrush(Colors.Black);
+                                textAgentStatus.Text = "Not Connected";
                                 break;
                             case "PartnerError":
                                 capturing = false;
+                                stackMain.Visibility = Visibility.Collapsed;
+                                stackReconnect.Visibility = Visibility.Visible;
+                                textAgentStatus.FontWeight = FontWeights.Normal;
+                                textAgentStatus.Foreground = new SolidColorBrush(Colors.Black);
+                                textAgentStatus.Text = "Not Connected";
                                 break;
                             default:
                                 break;
@@ -564,7 +577,7 @@ namespace InstaTech_Client
             }
         }
         // Remove trailing empty bytes in the buffer.
-        private byte[] trimBytes(byte[] bytes)
+        private byte[] TrimBytes(byte[] bytes)
         {
             // Loop backwards through array until the first non-zero byte is found.
             var firstZero = 0;
@@ -583,32 +596,19 @@ namespace InstaTech_Client
             // Return non-empty bytes.
             return bytes.Take(firstZero).ToArray();
         }
-        private async void beginScreenCapture()
+        private async void BeginScreenCapture()
         {
             capturing = true;
             sendFullScreenshot = true;
             this.WindowState = WindowState.Normal;
-            showToolTip(textAgentStatus, "An agent is now viewing your screen.", Colors.Green);
+            ShowToolTip(textAgentStatus, "An agent is now viewing your screen.", Colors.Green);
             textAgentStatus.FontWeight = FontWeights.Bold;
             textAgentStatus.Foreground = new SolidColorBrush(Colors.Green);
             textAgentStatus.Text = "Connected";
-            while (capturing == true)
-            {
-                await sendFrame();
-                await Task.Delay(25);
-            }
-            stackMain.Visibility = Visibility.Collapsed;
-            stackReconnect.Visibility = Visibility.Visible;
-            textAgentStatus.FontWeight = FontWeights.Normal;
-            textAgentStatus.Foreground = new SolidColorBrush(Colors.Black);
-            textAgentStatus.Text = "Not Connected";
+            await SendFrame();
         }
-        private async Task sendFrame()
+        private async Task SendFrame()
         {
-            if (!capturing)
-            {
-                return;
-            }
             IntPtr hWnd = IntPtr.Zero;
             IntPtr hDC = IntPtr.Zero;
             IntPtr graphDC = IntPtr.Zero;
@@ -616,35 +616,21 @@ namespace InstaTech_Client
             {
                 hWnd = User32.GetDesktopWindow();
                 hDC = User32.GetWindowDC(hWnd);
-                graphDC = graphic.GetHdc();
+                graphDC = Graphic.GetHdc();
                 var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 if (!copyResult)
                 {
-                    graphic.ReleaseHdc(graphDC);
-                    graphic.Clear(System.Drawing.Color.White);
+                    Graphic.ReleaseHdc(graphDC);
+                    Graphic.Clear(System.Drawing.Color.White);
                     var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                    graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                    Graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
                 }
                 else
                 {
-                    graphic.ReleaseHdc(graphDC);
+                    Graphic.ReleaseHdc(graphDC);
                     User32.ReleaseDC(hWnd, hDC);
                 }
-            }
-            catch
-            {
-                if (graphDC != IntPtr.Zero)
-                {
-                    graphic.ReleaseHdc(graphDC);
-                }
-                if (hDC != IntPtr.Zero)
-                {
-                    User32.ReleaseDC(hWnd, hDC);
-                }
-                return;
-            }
-            try
-            {
+
                 // Get cursor information to draw on the screenshot.
                 var ci = new User32.CursorInfo();
                 ci.cbSize = Marshal.SizeOf(ci);
@@ -653,7 +639,7 @@ namespace InstaTech_Client
                 {
                     using (var icon = System.Drawing.Icon.FromHandle(ci.hCursor))
                     {
-                        graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
+                        Graphic.DrawIcon(icon, ci.ptScreenPos.x, ci.ptScreenPos.y);
                     }
                 }
                 if (sendFullScreenshot)
@@ -664,43 +650,65 @@ namespace InstaTech_Client
                         Width = totalWidth,
                         Height = totalHeight
                     };
-                    await socketSend(request);
+                    await SocketSend(request);
                     using (var ms = new MemoryStream())
                     {
-                        screenshot.Save(ms, ImageFormat.Jpeg);
+                        Screenshot.Save(ms, ImageFormat.Jpeg);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
-                        await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
+                        await Socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
                         sendFullScreenshot = false;
                         return;
                     }
                 }
-                newData = getChangedPixels(screenshot, lastFrame);
-                if (newData != null)
+                NewData = GetChangedPixels(Screenshot, LastFrame);
+                if (NewData == null)
+                {
+                    await Task.Delay(100);
+                    // Ignore async warning here since it's intentional.  This is to prevent deadlock.
+#pragma warning disable
+                    SendFrame();
+#pragma warning restore
+                }
+                else
                 {
                     using (var ms = new MemoryStream())
                     {
-                        croppedFrame = screenshot.Clone(boundingBox, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        croppedFrame.Save(ms, ImageFormat.Jpeg);
+                        CroppedFrame = Screenshot.Clone(BoundingBox, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                        CroppedFrame.Save(ms, ImageFormat.Jpeg);
                         // Add x,y coordinates of top-left of image so receiver knows where to draw it.
-                        foreach (var metaByte in newData)
+                        foreach (var metaByte in NewData)
                         {
                             ms.WriteByte(metaByte);
                         }
-                        await socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
+                        await Socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
                     }
                 }
-                lastFrame = (Bitmap)screenshot.Clone();
+                LastFrame = (Bitmap)Screenshot.Clone();
             }
-            catch
+            catch (Exception ex)
             {
+                WriteToLog(ex);
+                if (graphDC != IntPtr.Zero)
+                {
+                    Graphic.ReleaseHdc(graphDC);
+                }
+                if (hDC != IntPtr.Zero)
+                {
+                    User32.ReleaseDC(hWnd, hDC);
+                }
                 capturing = false;
+                stackMain.Visibility = Visibility.Collapsed;
+                stackReconnect.Visibility = Visibility.Visible;
+                textAgentStatus.FontWeight = FontWeights.Normal;
+                textAgentStatus.Foreground = new SolidColorBrush(Colors.Black);
+                textAgentStatus.Text = "Not Connected";
             }
         }
 
-        private byte[] getChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
+        private byte[] GetChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
         {
             if (bitmap1.Height != bitmap2.Height || bitmap1.Width != bitmap2.Width)
             {
@@ -726,7 +734,7 @@ namespace InstaTech_Client
             IntPtr ptr2 = bd2.Scan0;
 
             // Declare an array to hold the bytes of the bitmap.
-            int bytes = Math.Abs(bd1.Stride) * screenshot.Height;
+            int bytes = Math.Abs(bd1.Stride) * Screenshot.Height;
             byte[] rgbValues1 = new byte[bytes];
             byte[] rgbValues2 = new byte[bytes];
 
@@ -780,7 +788,7 @@ namespace InstaTech_Client
                 newImgData[2] = Byte.Parse(top.ToString().PadLeft(4, '0').Substring(0, 2));
                 newImgData[3] = Byte.Parse(top.ToString().PadLeft(4, '0').Substring(2, 2));
 
-                boundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
+                BoundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
                 bitmap1.UnlockBits(bd1);
                 bitmap2.UnlockBits(bd2);
                 return newImgData;
@@ -792,7 +800,7 @@ namespace InstaTech_Client
                 return null;
             }
         }
-        private async Task checkForUpdates(bool Silent)
+        private async Task CheckForUpdates(bool Silent)
         {
             WebClient webClient = new WebClient();
             HttpClient httpClient = new HttpClient();
@@ -836,11 +844,11 @@ namespace InstaTech_Client
                 }
             }
         }
-        private async Task socketSend(dynamic JsonRequest)
+        private async Task SocketSend(dynamic JsonRequest)
         {
             var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
-            await socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            await Socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
         private void buttonClose_Click(object sender, RoutedEventArgs e)
@@ -848,9 +856,9 @@ namespace InstaTech_Client
             Close();
         }
 
-        private void startUACTimer()
+        private void StartUACTimer()
         {
-            uacTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
+            UacTimer.Elapsed += (object sender, System.Timers.ElapsedEventArgs args) =>
             {
                 if (handleUAC)
                 {
@@ -865,7 +873,7 @@ namespace InstaTech_Client
                     }
                 }
             };
-            uacTimer.Start();
+            UacTimer.Start();
         }
         public static void WriteToLog(Exception ex)
         {
@@ -915,6 +923,11 @@ namespace InstaTech_Client
                 Message = Message
             };
             File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
+        }
+
+        private void buttonClose_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+
         }
     }
 }
