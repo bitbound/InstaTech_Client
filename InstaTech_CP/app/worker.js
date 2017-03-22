@@ -128,19 +128,21 @@ function getChangedPixels(newImgData, oldImgData) {
         bottom = Math.min(bottom + 20, totalHeight);
 
         // Byte array that indicates top left coordinates of the image.
-        byteSuffix = new Uint8Array(4);
+        byteSuffix = new Uint8Array(6);
         var strLeft = String(left);
         var strTop = String(top);
-        while (strLeft.length < 4) {
+        while (strLeft.length < 6) {
             strLeft = "0" + strLeft;
         }
-        while (strTop.length < 4) {
+        while (strTop.length < 6) {
             strTop = "0" + strTop;
         }
         byteSuffix[0] = strLeft.slice(0, 2);
-        byteSuffix[1] = strLeft.slice(2);
-        byteSuffix[2] = strTop.slice(0, 2);
-        byteSuffix[3] = strTop.slice(2);
+        byteSuffix[1] = strLeft.slice(2, 4);
+        byteSuffix[2] = strLeft.slice(4);
+        byteSuffix[3] = strTop.slice(0, 2);
+        byteSuffix[4] = strTop.slice(2, 4);
+        byteSuffix[5] = strTop.slice(4);
         boundingBox = {
             x: left,
             y: top,

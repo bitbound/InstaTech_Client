@@ -132,6 +132,9 @@ function openWebSocket() {
                 sendBounds();
                 worker.webContents.executeJavaScript("sendFullScreenshot = true;");
                 break;
+            case "FrameReceived":
+                worker.webContents.executeJavaScript("getCapture()");
+                break;
             case "FileTransfer":
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
                     fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
@@ -303,13 +306,9 @@ function initRTC() {
         iceServers: [
             {
                 urls: [
-                    "stun:play.after-game.net",
                     "stun:stun.stunprotocol.org",
                     "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302",
-                    "stun:stun2.l.google.com:19302",
-                    "stun:stun3.l.google.com:19302",
-                    "stun:stun4.l.google.com:19302"
+                    "stun:stun1.l.google.com:19302"
                 ]
             }
         ]
@@ -503,9 +502,6 @@ electron.ipcRenderer.on("screen-capture", function (event, capture) {
         return;
     }
     socket.send(dataURItoBlob(capture));
-    window.setTimeout(function () {
-        worker.webContents.executeJavaScript("getCapture()");
-    }, 100);
 });
 window.onclick = function(){
     if ($("#divMenu").is(":visible") && !$("#imgMenu").is(":hover") && !$("#divMenu").is(":hover")) {

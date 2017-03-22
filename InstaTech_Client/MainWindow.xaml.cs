@@ -658,6 +658,8 @@ namespace InstaTech_Client
                         ms.WriteByte(0);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
+                        ms.WriteByte(0);
+                        ms.WriteByte(0);
                         await Socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
                         sendFullScreenshot = false;
                         return;
@@ -782,11 +784,13 @@ namespace InstaTech_Client
                 bottom = Math.Min(bottom + 20, totalHeight);
 
                 // Byte array that indicates top left coordinates of the image.
-                newImgData = new byte[4];
-                newImgData[0] = Byte.Parse(left.ToString().PadLeft(4, '0').Substring(0, 2));
-                newImgData[1] = Byte.Parse(left.ToString().PadLeft(4, '0').Substring(2, 2));
-                newImgData[2] = Byte.Parse(top.ToString().PadLeft(4, '0').Substring(0, 2));
-                newImgData[3] = Byte.Parse(top.ToString().PadLeft(4, '0').Substring(2, 2));
+                newImgData = new byte[6];
+                newImgData[0] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(0, 2));
+                newImgData[1] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(2, 2));
+                newImgData[2] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(4, 2));
+                newImgData[3] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(0, 2));
+                newImgData[4] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(2, 2));
+                newImgData[5] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(4, 2));
 
                 BoundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
                 bitmap1.UnlockBits(bd1);
@@ -923,11 +927,6 @@ namespace InstaTech_Client
                 Message = Message
             };
             File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
-        }
-
-        private void buttonClose_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-
         }
     }
 }
