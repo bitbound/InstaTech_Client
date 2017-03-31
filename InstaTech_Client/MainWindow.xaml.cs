@@ -5,14 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Drawing;
@@ -26,7 +20,6 @@ using System.Windows.Media.Animation;
 using System.Net;
 using System.Net.Http;
 using System.Diagnostics;
-using System.Security.Permissions;
 using System.Net.NetworkInformation;
 using Win32_Classes;
 
@@ -36,7 +29,7 @@ namespace InstaTech_Client
     {
         public static MainWindow Current { get; set; }
 
-        // ***  Config: Change these variables for your environment.  *** //
+        // ***  Config: Change these variables for your environment.  The preprocessor directive at the top of this file should be Deploy.  *** //
 #if Deploy    
         const string hostName = "";
 #elif Test
@@ -230,7 +223,10 @@ namespace InstaTech_Client
                 ComputerName = Environment.MachineName
             });
         }
-
+        private void menuViewer_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("https://" + hostName + "/Remote_Control");
+        }
         private void menuUnattended_Click(object sender, RoutedEventArgs e)
         {
             
@@ -928,5 +924,6 @@ namespace InstaTech_Client
             };
             File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
         }
+
     }
 }

@@ -1,9 +1,9 @@
 {
   "name": "instatechcp",
   "productName": "InstaTech CP",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "InstaTech Cross-Platform Client",
-  "license": "Apache-2.0",
+  "license": "Custom",
   "author": {
     "name": "Translucency",
     "email": "jared@translucency.info",
@@ -40,9 +40,11 @@
   },
   "build": {
     "appId": "InstaTech CP",
-    "category": "Utility",
     "win": {
-      "iconUrl": "https://instatech.org/favicon.ico"
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "installerIcon": "build/icon.ico"
     }
   }
 }

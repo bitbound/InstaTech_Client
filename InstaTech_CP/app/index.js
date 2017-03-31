@@ -249,7 +249,7 @@ function openWebSocket() {
                     {
                         baseKey = baseKey.slice(0), baseKey.length - 1;
                     }
-                    var modifiers = json.Modifiers;
+                    var modifiers = jsonMessage.Modifiers;
 
                     // Rename base key for RobotJS syntax.
                     if (baseKey.length > 1) {
@@ -475,6 +475,9 @@ function deleteFolderRecursive (path) {
         fs.rmdirSync(path);
     }
 };
+function openViewer(){
+    electron.shell.openExternal("https://" + global.hostName + "/Remote_Control");
+}
 function openAbout() {
     var about = new electron.remote.BrowserWindow({
         width: 400,

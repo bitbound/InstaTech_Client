@@ -74,7 +74,7 @@ function captureImage() {
     imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
     if (sendFullScreenshot || lastFrame == undefined) {
         sendFullScreenshot = false;
-        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(ctx.canvas.toDataURL()).toJpeg(100), new Uint8Array(4)]);
+        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(ctx.canvas.toDataURL()).toJpeg(100), new Uint8Array(6)]);
     }
     else {
         getChangedPixels(imgData, lastFrame);

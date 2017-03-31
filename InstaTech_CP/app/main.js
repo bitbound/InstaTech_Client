@@ -1,5 +1,5 @@
 // ***  Config: Change these variables for your environment.  *** //
-global.hostName = "";
+global.hostName = "demo.instatech.org";
 
 // Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this.)
 global.debug = false;
