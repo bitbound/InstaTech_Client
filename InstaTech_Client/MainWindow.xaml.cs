@@ -50,7 +50,7 @@ namespace InstaTech_Client
         const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
 
         // ***  Variables  *** //
-        ClientWebSocket Socket { get; set; }
+        WebSocket Socket { get; set; }
         HttpClient HttpClient { get; set; } = new HttpClient();
         Bitmap Screenshot { get; set; }
         Bitmap LastFrame { get; set; }
@@ -275,7 +275,7 @@ namespace InstaTech_Client
         {
             try
             {
-                Socket = new ClientWebSocket();
+                Socket = SystemClientWebSocket.CreateClientWebSocket();
             }
             catch (Exception ex)
             {
@@ -410,14 +410,6 @@ namespace InstaTech_Client
                                 break;
                             case "CaptureScreen":
                                 BeginScreenCapture();
-                                break;
-                            case "RTCOffer":
-                                var request = new
-                                {
-                                    Type = "RTCOffer",
-                                    ConnectionType = "Denied",
-                                };
-                                await SocketSend(request);
                                 break;
                             case "ConnectUpgrade":
                                 if (jsonMessage.Status == "timeout")

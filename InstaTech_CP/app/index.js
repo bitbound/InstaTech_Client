@@ -11,8 +11,8 @@
     };
     fs.appendFile(os.tmpdir() + "/InstaTech_CP_Logs.txt", JSON.stringify(jsonError) + "\r\n");
     // This is required to ignore random Electron renderer error.
-    if (capturing && useWebSocket) {
-        worker.webContents.executeJavaScript("getCapture()");
+    if (capturing) {
+        getCapture();
         return true;
     }
 };
@@ -33,21 +33,28 @@ const fs = require("fs");
 const os = require("os");
 const buf = require("buffer");
 var win = electron.remote.getCurrentWindow();
-var worker = electron.remote.BrowserWindow.fromId(2);
-var rtcConnection;
 var fr = new FileReader();
 var socket;
 var capturing = false;
+var lastMouseMove;
+var ctx;
+var imgData;
+var video;
+var img;
+var byteSuffix;
+var lastFrame;
+var croppedFrame;
+var tempCanvas = document.createElement("canvas");
+var boundingBox;
+var sendFullScreenshot = true;
 var totalWidth = 0;
 var totalHeight = 0;
-var lastMouseMove;
-var useWebSocket = false;
-
 // Offsets are the left and top edge of the screen, in case multiple monitor setups
 // create a situation where the edge of a monitor is in the negative.  This must
 // be converted to a 0-based max left/top to render images on the canvas properly.
 var offsetX = 0;
 var offsetY = 0;
+
 function openWebSocket() {
     socket = new WebSocket(wsPath);
     socket.onopen = function (e) {
@@ -56,13 +63,9 @@ function openWebSocket() {
             "ConnectionType": "ClientApp"
         };
         socket.send(JSON.stringify(request));
-        initRTC();
     };
     socket.onclose = function (e) {
         capturing = false;
-        if (rtcConnection.signalingState == "stable") {
-            rtcConnection.close();
-        }
         $("#inputAgentStatus").val("Not Connected");
         $("#inputAgentStatus").css("color", "black");
         $("#sectionMain").hide();
@@ -70,9 +73,6 @@ function openWebSocket() {
     };
     socket.onerror = function (e) {
         capturing = false;
-        if (rtcConnection.signalingState == "stable") {
-            rtcConnection.close();
-        }
         $("#sectionMain").hide();
         $("#sectionNewSession").show();
         console.log(e);
@@ -84,56 +84,14 @@ function openWebSocket() {
                 $("#inputSessionID").val(jsonMessage.SessionID);
                 break;
             case "CaptureScreen":
-                if (jsonMessage.Source == "WebSocket") {
-                    useWebSocket = true;
-                }
                 beginScreenCapture();
-                break;
-            case "RTCOffer":
-                if (useWebSocket) {
-                    var request = {
-                        "Type": "RTCOffer",
-                        "Status": "Denied"
-                    };
-                    socket.send(JSON.stringify(request));
-                    return;
-                }
-                var offer = JSON.parse(atob(jsonMessage.Offer));
-                rtcConnection.setRemoteDescription(offer, function () {
-                    rtcConnection.createAnswer(function (answer) {
-                        rtcConnection.setLocalDescription(answer, function () {
-                            var request = {
-                                "Type": "RTCAnswer",
-                                "Answer": btoa(JSON.stringify(rtcConnection.localDescription)),
-                            };
-                            socket.send(JSON.stringify(request));
-                        }, function () {
-                            // Failure callback.
-                            useWebSocket = true;
-                            beginScreenCapture();
-                        });
-                    }, function (error) {
-                        // Failure callback.
-                        useWebSocket = true;
-                        beginScreenCapture();
-                    });
-                }, function (error) {
-                    // Failure callback.
-                    useWebSocket = true;
-                    beginScreenCapture();
-                });
-                break;
-            case "RTCCandidate":
-                if (rtcConnection != undefined) {
-                    rtcConnection.addIceCandidate(new RTCIceCandidate(jsonMessage.Candidate));
-                }
                 break;
             case "RefreshScreen":
                 sendBounds();
-                worker.webContents.executeJavaScript("sendFullScreenshot = true;");
+                sendFullScreenshot = true;
                 break;
             case "FrameReceived":
-                worker.webContents.executeJavaScript("getCapture()");
+                getCapture();
                 break;
             case "FileTransfer":
                 if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
@@ -266,14 +224,12 @@ function openWebSocket() {
                 break;
             case "PartnerClose":
                 capturing = false;
-                rtcConnection.close();
                 if (socket) {
                     socket.close();
                 }
                 break;
             case "PartnerError":
                 capturing = false;
-                rtcConnection.close();
                 if (socket) {
                     socket.close();
                 }
@@ -297,63 +253,11 @@ function beginScreenCapture() {
     showTooltip($("#inputAgentStatus"), "left", "green", "An agent is now viewing your screen.");
     $("#inputAgentStatus").val("Connected");
     $("#inputAgentStatus").css("color", "green");
-    if (useWebSocket) {
-        worker.webContents.executeJavaScript("getCapture()");   
-    }
+    getCapture();
 };
-function initRTC() {
-    rtcConnection = new RTCPeerConnection({
-        iceServers: [
-            {
-                urls: [
-                    "stun:stun.stunprotocol.org",
-                    "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302"
-                ]
-            }
-        ]
-    });
-    rtcConnection.onicecandidate = function (evt) {
-        if (evt.candidate) {
-            socket.send(JSON.stringify({
-                'Type': 'RTCCandidate',
-                'Candidate': evt.candidate
-            }));
-        }
-    };
-    addRTCMedia();
-}
-function addRTCMedia() {
-    navigator.webkitGetUserMedia({
-        audio: false,
-        video: {
-            mandatory: {
-                chromeMediaSource: 'desktop',
-                minWidth: Math.round(totalWidth),
-                maxWidth: Math.round(totalWidth),
-                minHeight: Math.round(totalHeight),
-                maxHeight: Math.round(totalHeight),
-            }
-        }
-    }, function (stream) {
-        // Success callback.
-        if (rtcConnection.addTrack) {
-            rtcConnection.addTrack(stream);
-            $("#videoScreen")[0].src = URL.createObjectURL(stream);
-        }
-        else if (rtcConnection.addStream) {
-            rtcConnection.addStream(stream);
-            $("#videoScreen")[0].src = URL.createObjectURL(stream);
-        }
 
-    }, function () {
-        // Failure callback.
-        useWebSocket = true;
-    })
-}
 function reconnect() {
     $("#inputSessionID").val("");
-    rtcConnection = undefined;
     $("#sectionNewSession").hide();
     $("#sectionMain").show();
     openWebSocket();
@@ -475,6 +379,135 @@ function deleteFolderRecursive (path) {
         fs.rmdirSync(path);
     }
 };
+function getCapture() {
+    video = document.getElementById("videoScreen");
+    if (video.src == "") {
+        navigator.webkitGetUserMedia({
+            audio: false,
+            video: {
+                mandatory: {
+                    chromeMediaSource: 'desktop',
+                    minWidth: Math.round(totalWidth),
+                    maxWidth: Math.round(totalWidth),
+                    minHeight: Math.round(totalHeight),
+                    maxHeight: Math.round(totalHeight),
+                }
+            }
+        }, function (stream) {
+            // Success callback.
+            video.src = URL.createObjectURL(stream);
+            captureImage();
+        }, function () {
+            // Error callback.
+            throw "Unable to capture screen.";
+        });
+    }
+    else {
+        captureImage();
+    }
+}
+
+function captureImage() {
+    ctx.drawImage(document.getElementById("videoScreen"), 0, 0);
+    imgData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height).data;
+    if (sendFullScreenshot || lastFrame == undefined) {
+        sendFullScreenshot = false;
+        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(ctx.canvas.toDataURL()).toJpeg(100), new Uint8Array(6)]);
+    }
+    else {
+        getChangedPixels(imgData, lastFrame);
+    }
+    lastFrame = imgData;
+    if (croppedFrame == null) {
+        window.setTimeout(captureImage, 50);
+    } else {
+        fr = new FileReader();
+        fr.onload = function () {
+            socket.send(dataURItoBlob(this.result));
+        };
+        fr.readAsDataURL(croppedFrame);
+    }
+}
+function getChangedPixels(newImgData, oldImgData) {
+    var left = totalWidth + 1;
+    var top = totalHeight + 1;
+    var right = -1;
+    var bottom = -1;
+    // Check RGBA value for each pixel.
+    for (var counter = 0; counter < newImgData.length - 4; counter += 4) {
+        if (newImgData[counter] != lastFrame[counter] ||
+            newImgData[counter + 1] != lastFrame[counter + 1] ||
+            newImgData[counter + 2] != lastFrame[counter + 2] ||
+            newImgData[counter + 3] != lastFrame[counter + 3]) {
+            // Change was found.
+            var pixel = counter / 4;
+            var row = Math.floor(pixel / ctx.canvas.width);
+            var column = pixel % ctx.canvas.width;
+            if (row < top) {
+                top = row;
+            }
+            if (row > bottom) {
+                bottom = row;
+            }
+            if (column < left) {
+                left = column;
+            }
+            if (column > right) {
+                right = column;
+            }
+        }
+    }
+    if (left < right && top < bottom) {
+        // Bounding box is valid.
+
+        left = Math.max(left - 20, 0);
+        top = Math.max(top - 20, 0);
+        right = Math.min(right + 20, totalWidth);
+        bottom = Math.min(bottom + 20, totalHeight);
+
+        // Byte array that indicates top left coordinates of the image.
+        byteSuffix = new Uint8Array(6);
+        var strLeft = String(left);
+        var strTop = String(top);
+        while (strLeft.length < 6) {
+            strLeft = "0" + strLeft;
+        }
+        while (strTop.length < 6) {
+            strTop = "0" + strTop;
+        }
+        byteSuffix[0] = strLeft.slice(0, 2);
+        byteSuffix[1] = strLeft.slice(2, 4);
+        byteSuffix[2] = strLeft.slice(4);
+        byteSuffix[3] = strTop.slice(0, 2);
+        byteSuffix[4] = strTop.slice(2, 4);
+        byteSuffix[5] = strTop.slice(4);
+        boundingBox = {
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top
+        }
+        tempCanvas.width = boundingBox.width;
+        tempCanvas.height = boundingBox.height;
+        tempCanvas.getContext("2d").drawImage(ctx.canvas, boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height, 0, 0, boundingBox.width, boundingBox.height);
+        croppedFrame = new Blob([electron.nativeImage.createFromDataURL(tempCanvas.toDataURL()).toJpeg(100), byteSuffix]);
+    }
+    else {
+        croppedFrame = null;
+    }
+}
+function ArrBuffToString(buffer) {
+    return String.fromCharCode.apply(null, new Uint16Array(buffer));
+}
+
+function StringToArrBuff(strData) {
+    var buff = new ArrayBuffer(strData.length * 2); // 2 bytes for each char
+    var buffView = new Uint16Array(buf);
+    for (var i = 0; i < strData.length; i++) {
+        buffView[i] = str.charCodeAt(i);
+    }
+    return buff;
+}
 function openViewer(){
     electron.shell.openExternal("https://" + global.hostName + "/Remote_Control");
 }
@@ -494,18 +527,6 @@ function openAbout() {
     });
 };
 
-electron.ipcRenderer.on("screen-capture", function (event, capture) {
-    if (!capturing) {
-        return;
-    }
-    if (capture == null) {
-        window.setTimeout(function () {
-            worker.webContents.executeJavaScript("getCapture()");
-        }, 100);
-        return;
-    }
-    socket.send(dataURItoBlob(capture));
-});
 window.onclick = function(){
     if ($("#divMenu").is(":visible") && !$("#imgMenu").is(":hover") && !$("#divMenu").is(":hover")) {
         toggleMenu();
@@ -514,12 +535,15 @@ window.onclick = function(){
 
 
 ///* Entry point. *///
-
-$.each(electron.screen.getAllDisplays(), function (index, element) {
-    totalWidth += element.bounds.width;
-    totalHeight = Math.max(totalHeight, element.bounds.height);
-    offsetX = Math.min(element.bounds.x, offsetX);
-    offsetY = Math.min(element.bounds.y, offsetY);
+$(document).ready(function () {
+    ctx = document.getElementById("canvasScreen").getContext("2d");
+    $.each(electron.screen.getAllDisplays(), function (index, element) {
+        totalWidth += element.bounds.width;
+        totalHeight = Math.max(totalHeight, element.bounds.height);
+        offsetX = Math.min(element.bounds.x, offsetX);
+        offsetY = Math.min(element.bounds.y, offsetY);
+    });
+    ctx.canvas.width = Math.round(totalWidth);
+    ctx.canvas.height = Math.round(totalHeight);
+    openWebSocket();
 });
-
-openWebSocket();

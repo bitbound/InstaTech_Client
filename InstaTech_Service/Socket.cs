@@ -42,7 +42,7 @@ namespace InstaTech_Service
         const string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
         // ***  Variables  *** //
-        static ClientWebSocket socket;
+        static WebSocket socket;
         static HttpClient httpClient = new HttpClient();
         static Bitmap screenshot;
         static Bitmap lastFrame;
@@ -144,8 +144,8 @@ namespace InstaTech_Service
 
         private static async Task InitWebSocket()
         {
-   
-            socket = new ClientWebSocket();
+
+            socket = SystemClientWebSocket.CreateClientWebSocket();
             try
             {
                 await socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
@@ -211,14 +211,6 @@ namespace InstaTech_Service
                                 }
                                 await CheckForUpdates();
                                 BeginScreenCapture();
-                                break;
-                            case "RTCOffer":
-                                var request = new
-                                {
-                                    Type = "RTCOffer",
-                                    ConnectionType = "Denied",
-                                };
-                                await SocketSend(request);
                                 break;
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
@@ -677,40 +669,47 @@ namespace InstaTech_Service
             {
                 return;
             }
-            var hWnd = User32.GetDesktopWindow();
-            var hDC = User32.GetWindowDC(hWnd);
-            var graphDC = graphic.GetHdc();
-            var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
-            // Switch desktop if copy fails.
-            if (!copyResult)
+            try
             {
+                var hWnd = User32.GetDesktopWindow();
+                var hDC = User32.GetWindowDC(hWnd);
+                var graphDC = graphic.GetHdc();
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                // Switch desktop if copy fails.
+                if (!copyResult)
+                {
+                    graphic.ReleaseHdc(graphDC);
+                    User32.ReleaseDC(hWnd, hDC);
+                    WriteToLog("Desktop switch initiated.");
+                    var deskName = User32.GetCurrentDesktop();
+                    var procInfo = new ADVAPI32.PROCESS_INFORMATION();
+                    if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
+                    {
+                        var request = new
+                        {
+                            Type = "DesktopSwitch",
+                            Status = "pending",
+                            ComputerName = Environment.MachineName
+                        };
+                        await SocketSend(request);
+                        capturing = false;
+                    }
+                    else
+                    {
+                        graphic.Clear(System.Drawing.Color.White);
+                        var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
+                        graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                        var error = Marshal.GetLastWin32Error();
+                        WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
+                    }
+                }
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
-                WriteToLog("Desktop switch initiated.");
-                var deskName = User32.GetCurrentDesktop();
-                var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
-                {
-                    var request = new
-                    {
-                        Type = "DesktopSwitch",
-                        Status = "pending",
-                        ComputerName = Environment.MachineName
-                    };
-                    await SocketSend(request);
-                    capturing = false;
-                }
-                else
-                {
-                    graphic.Clear(System.Drawing.Color.White);
-                    var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                    graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
-                    var error = Marshal.GetLastWin32Error();
-                    WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
-                }
             }
-            graphic.ReleaseHdc(graphDC);
-            User32.ReleaseDC(hWnd, hDC);
+            catch
+            {
+                return;
+            }
 
             // Get cursor information to draw on the screenshot.
             User32.GetCursorPos(out cursorPos);

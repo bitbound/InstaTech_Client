@@ -3,16 +3,16 @@
 A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server (see https://instatech.org for details).
 
 ### WPF Client + Windows Service (/InstaTech Client/)
-**Compatibility:** Windows 8.1 and 10.
+**Compatibility:** Windows 7, 8, and 10.
 
-The WPF version is a small, portable EXE for Windows 8.1 and 10.  It contains the Windows Service and can be used from the command line in the same way.
+The WPF version is a small, portable EXE for Windows.  It contains the Windows Service and can be used from the command line in the same way.
 
 **Switches**
    * -install = Installs (or updates) the service and begins accepting connections.
    * -uninstall = Uninstalls the service.
 
 ### Windows Service Client (/InstaTech_Service/)
-**Compatibility:** Windows 8.1 and 10.
+**Compatibility:** Windows 7, 8, and 10.
 
 A self-installing Windows service that will listen for connections and launch the client in the logged-on user's session.  This is embedded in the WPF client.
 
@@ -22,7 +22,7 @@ A self-installing Windows service that will listen for connections and launch th
    * -update = Updates the installed service to this version.
 
 ### Cross-Platform Client (/InstaTech_CP/)
-**Compatibility:** Windows 7, Linux, and Mac.
+**Compatibility:** Windows, Linux, and Mac.
 
 The cross-platform version is larger than the WPF and uses an installer.  However, it works on all versions of Windows, Linux, and Mac.  It's built with Electron (http://electron.atom.io).
 

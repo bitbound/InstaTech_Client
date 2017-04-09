@@ -53,7 +53,6 @@
     <Content Include="app\index.css" />
     <Content Include="app\index.html" />
     <Content Include="app\package.json" />
-    <Content Include="app\worker.html" />
     <Content Include="Assets\HamburgerMenu_16x.png" />
     <Content Include="Assets\icons\24x24.png" />
     <Content Include="Assets\icons\256x256.png" />
@@ -79,7 +78,6 @@
     <Content Include="jsconfig.json" />
     <Content Include="License.txt" />
     <Content Include="package.json" />
-    <Content Include="README.md" />
     <Content Include="typings.json" />
   </ItemGroup>
   <ItemGroup>
@@ -112,7 +110,6 @@
     <Compile Include="app\Scripts\adapter.js" />
     <Compile Include="app\Scripts\jquery-3.1.0.js" />
     <Compile Include="app\Scripts\jquery-3.1.0.min.js" />
-    <Compile Include="app\worker.js" />
     <Compile Include="Scripts\_references.js" />
     <Compile Include="Scripts\adapter.js" />
     <Compile Include="Scripts\jquery-3.1.0.js" />

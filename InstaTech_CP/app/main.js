@@ -1,22 +1,17 @@
 // ***  Config: Change these variables for your environment.  *** //
-global.hostName = "demo.instatech.org";
+global.hostName = "";
 
 // Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this.)
 global.debug = false;
 
 // A service URL that will respond to a GET request with the current version.
 var versionUrl;
-if (process.platform == "win32")
-{
-    versionURL = "https://" + global.hostName + "/Services/Get_CP_Client_Version.cshtml";
-}
-else if (process.platform == "linux")
+if (process.platform == "linux")
 {
     versionURL = "https://" + global.hostName + "/Services/Get_Linux_Client_Version.cshtml";
 }
 
 // The URLs of the application's current version per OS.
-var downloadURLWindows = "https://" + global.hostName + "/Downloads/InstaTech_CP.exe";
 var downloadURLMac = "";
 var downloadURLLinux = "https://" + global.hostName + "/Downloads/InstaTech_CP.AppImage";
 
@@ -29,7 +24,6 @@ const https = require("https");
 
 // Prevent window from being garbage collected.
 let mainWindow;
-let workerWindow;
 
 function createMainWindow() {
     const win = new electron.BrowserWindow({
@@ -75,9 +69,6 @@ function checkForUpdates() {
                     if (selection == 0) {
                         var downloadURL;
                         switch (process.platform) {
-                            case "win32":
-                                downloadURL = downloadURLWindows;
-                                break;
                             case "linux":
                                 downloadURL = downloadURLLinux;
                                 break;
@@ -149,11 +140,5 @@ app.on('activate', () => {
 
 app.on('ready', () => {
     mainWindow = createMainWindow();
-    workerWindow = new electron.BrowserWindow({
-        show: false,
-        skipTaskbar: true,
-        title: "InstaTech Worker",
-    });
-    workerWindow.loadURL(`file://${__dirname}/worker.html`);
     cleanupTempFiles();
 });
