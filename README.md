@@ -43,4 +43,4 @@ The InstaTech project uses the below 3rd-party libraries.  A huge thank you to t
 - Fody: https://github.com/Fody/Fody
 - Fody/Costura: https://github.com/Fody/Costura
 - Robot.js: https://github.com/octalmage/robotjs/
-- Adapter: https://github.com/webrtc/adapter
+- System.Net.WebSockets.Client.Managed: https://github.com/PingmanTools/System.Net.WebSockets.Client.Managed
