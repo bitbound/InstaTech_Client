@@ -1,6 +1,9 @@
 # InstaTech Client
 
-A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server (see https://instatech.org for details).
+A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server.
+
+Server Repo: https://github.com/Jay-Rad/InstaTech_Server
+Website: https://instatech.org
 
 ### WPF Client + Windows Service (/InstaTech Client/)
 **Compatibility:** Windows 7, 8, and 10.
@@ -29,7 +32,7 @@ The cross-platform version is larger than the WPF and uses an installer.  Howeve
 ### InstaTech Server
 **Compatibility:** Windows 8/10 Pro or Enterprise, Windows Server 2012+.
 
-The source code for the InstaTech Server is not made public.  However, you can download a trial version at https://instatech.org/Downloads.
+Repo: https://github.com/Jay-Rad/InstaTech_Server
 
 ### Remote Control
 The WPF client and cross-platform client, when launched, will generate a random session code.  Enter that code into the web-based remote control to view the remote computer and/or take control.

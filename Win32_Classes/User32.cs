@@ -1411,16 +1411,13 @@ namespace Win32_Classes
             var inputDesktop = User32.OpenInputDesktop();
             byte[] deskBytes = new byte[256];
             uint lenNeeded;
-            ADVAPI32.GetUserObjectInformation(inputDesktop, ADVAPI32.UOI_NAME, deskBytes, 256, out lenNeeded);
+            var success = ADVAPI32.GetUserObjectInformation(inputDesktop, ADVAPI32.UOI_NAME, deskBytes, 256, out lenNeeded);
+            if (!success)
+            {
+                return "default";
+            }
             string deskName;
-            try
-            {
-                deskName = Encoding.UTF8.GetString(trimBytes(deskBytes));
-            }
-            catch
-            {
-                deskName = "default";
-            }
+            deskName = Encoding.UTF8.GetString(trimBytes(deskBytes));
             User32.CloseDesktop(inputDesktop);
             return deskName;
         }

@@ -69,6 +69,7 @@ namespace InstaTech_Service
         static Process cmdProcess;
         static dynamic deployFileRequest;
         static List<ArraySegment<Byte>> socketSendBuffer = new List<ArraySegment<byte>>();
+        static string desktopName;
 
 
         public static async Task StartInteractive()
@@ -118,8 +119,8 @@ namespace InstaTech_Service
             {
                 ConnectionType = "ClientConsole";
             }
+            desktopName = User32.GetCurrentDesktop();
             await InitWebSocket();
-
             await HandleInteractiveSocket();
         }
         public static async void StartService()
@@ -413,9 +414,9 @@ namespace InstaTech_Service
                                         proc.Kill();
                                     }
                                 }
-                                var deskName = User32.GetCurrentDesktop();
+                                desktopName = User32.GetCurrentDesktop();
                                 var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                                var processResult = ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo);
+                                var processResult = ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", desktopName, out procInfo);
                                 if (processResult == false)
                                 {
                                     var response = new
@@ -445,7 +446,8 @@ namespace InstaTech_Service
                                     }
                                 }
                                 var pi = new ADVAPI32.PROCESS_INFORMATION();
-                                ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive -once", User32.GetCurrentDesktop().ToLower(), out pi);
+                                desktopName = User32.GetCurrentDesktop();
+                                ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive -once", desktopName, out pi);
                                 break;
                             case "ServiceDuplicate":
                                 WriteToLog(new Exception("Service is already running on another computer with the same name."));
@@ -675,15 +677,16 @@ namespace InstaTech_Service
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
                 var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                graphic.ReleaseHdc(graphDC);
+                User32.ReleaseDC(hWnd, hDC);
                 // Switch desktop if copy fails.
                 if (!copyResult)
                 {
-                    graphic.ReleaseHdc(graphDC);
-                    User32.ReleaseDC(hWnd, hDC);
-                    WriteToLog("Desktop switch initiated.");
-                    var deskName = User32.GetCurrentDesktop();
+                    capturing = false;
+                    WriteToLog($"Desktop switch initiated from {desktopName} to {User32.GetCurrentDesktop()}.");
+                    desktopName = User32.GetCurrentDesktop();
                     var procInfo = new ADVAPI32.PROCESS_INFORMATION();
-                    if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", deskName.ToLower(), out procInfo))
+                    if (ADVAPI32.OpenInteractiveProcess(System.Reflection.Assembly.GetExecutingAssembly().Location + " -interactive", desktopName, out procInfo))
                     {
                         var request = new
                         {
@@ -692,19 +695,22 @@ namespace InstaTech_Service
                             ComputerName = Environment.MachineName
                         };
                         await SocketSend(request);
-                        capturing = false;
+                        return;
                     }
                     else
                     {
-                        graphic.Clear(System.Drawing.Color.White);
-                        var font = new Font(FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                        graphic.DrawString("Waiting for screen capture...", font, Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
                         var error = Marshal.GetLastWin32Error();
-                        WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
+                        if (error == 6)
+                        {
+                            WriteToLog("Connection was dropped due to a Windows session change.");
+                        }
+                        else
+                        {
+                            WriteToLog(new Exception("Failed to switch desktops.  Error: " + error.ToString()));
+                        }
+                        return;
                     }
                 }
-                graphic.ReleaseHdc(graphDC);
-                User32.ReleaseDC(hWnd, hDC);
             }
             catch
             {
