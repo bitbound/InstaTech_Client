@@ -2,10 +2,10 @@
 
 A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server.
 
-Server Repo: https://github.com/Jay-Rad/InstaTech_Server
+Server Repo: https://github.com/Jay-Rad/InstaTech_Server  
 Website: https://instatech.org
 
-### WPF Client + Windows Service (/InstaTech Client/)
+### WPF Client + Windows Service (/InstaTech_Client/)
 **Compatibility:** Windows 7, 8, and 10.
 
 The WPF version is a small, portable EXE for Windows.  It contains the Windows Service and can be used from the command line in the same way.
@@ -40,6 +40,11 @@ The WPF client and cross-platform client, when launched, will generate a random 
 Computers that have the Windows service will show up in the Unattended mode and the Computer Hub of the InstaTech Server.
 
 The remote control tool is currently located at https://demo.instatech.org/Remote_Control.
+
+### Building
+There's an automated package builder available at https://instatech.org/Downloads.  It will recompile the client applications so they target your hostname, rebuild the ASP.NET site with your company name on it, and put them in an installer.
+
+Alternatively, you can change the hostname properties yourself prior to building.  Check the comments in /InstaTech_Client/MainWindow.xaml.cs, /InstaTech_Service/Socket.cs, and /InstaTech_CP/app/main.js.
 
 ### 3rd-Party Libraries
 The InstaTech project uses the below 3rd-party libraries.  A huge thank you to the creators for these!  They are all awesome, and I highly encourage you to check them out.
