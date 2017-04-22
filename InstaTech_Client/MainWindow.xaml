@@ -25,7 +25,11 @@
                             <MenuItem x:Name="menuUpgrade" Header="Upgrade to Service" Click="menuUpgrade_Click" ToolTip="Elevates the process to a service, allowing interaction with UAC and logon windows." />
                             <MenuItem x:Name="menuViewer" Header="Open Viewer" Click="menuViewer_Click" ToolTip="Opens the web viewer that can connect to this client." />
                             <MenuItem x:Name="menuUnattended" Header="Unattended Access" Click="menuUnattended_Click" ToolTip="Installs or uninstalls a service that will allow unattended access to this computer." />
-                            <MenuItem x:Name="menuUAC" Header="Handle UAC" Click="menuUAC_Click" ToolTip="If enabled, UAC prompts will be closed automatically if they appear.  This prevents the cursor from 'getting stuck,' since this client can't interact with UAC prompts.  To interact with UAC, install the service or do a one-time upgrade." IsCheckable="True" IsChecked="True" />
+                            <MenuItem x:Name="menuUAC" Header="Handle UAC" Click="menuUAC_Click" IsCheckable="True" IsChecked="True">
+                                <MenuItem.ToolTip>
+                                    <TextBlock MaxWidth="400" TextWrapping="Wrap" Text="If enabled, UAC prompts will be closed automatically if they appear.  This prevents the cursor from 'getting stuck,' since this client can't interact with UAC prompts.  To interact with UAC, install the service or do a one-time upgrade."></TextBlock>
+                                </MenuItem.ToolTip>
+                            </MenuItem>
                             <MenuItem x:Name="menuAbout" Header="About" Click="menuAbout_Click" ToolTip="Shows additional information." />
                         </ContextMenu>
                     </Button.ContextMenu>
