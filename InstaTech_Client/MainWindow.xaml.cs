@@ -605,7 +605,7 @@ namespace InstaTech_Client
                 hWnd = User32.GetDesktopWindow();
                 hDC = User32.GetWindowDC(hWnd);
                 graphDC = Graphic.GetHdc();
-                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0 + offsetX, 0 + offsetY, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 if (!copyResult)
                 {
                     Graphic.ReleaseHdc(graphDC);

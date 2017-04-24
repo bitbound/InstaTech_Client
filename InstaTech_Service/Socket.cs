@@ -676,7 +676,7 @@ namespace InstaTech_Service
                 var hWnd = User32.GetDesktopWindow();
                 var hDC = User32.GetWindowDC(hWnd);
                 var graphDC = graphic.GetHdc();
-                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0, 0, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0 + offsetX, 0 + offsetY, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 graphic.ReleaseHdc(graphDC);
                 User32.ReleaseDC(hWnd, hDC);
                 // Switch desktop if copy fails.
