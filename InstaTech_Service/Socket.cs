@@ -210,7 +210,10 @@ namespace InstaTech_Service
                                         proc.Kill();
                                     }
                                 }
-                                await CheckForUpdates();
+                                if (!ConnectionType.Contains("Once"))
+                                {
+                                    await CheckForUpdates();
+                                }
                                 BeginScreenCapture();
                                 break;
                             case "RefreshScreen":

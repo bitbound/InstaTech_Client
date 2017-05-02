@@ -42,7 +42,7 @@ namespace InstaTech_Client
 
         private void hyperChangeLog_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("https://instatech.org/Docs/InstaTech_Win_ChangeLog.html");
+            System.Diagnostics.Process.Start("https://demo.instatech.org/Docs/InstaTech_Win_ChangeLog.html");
         }
 
         private void hyperLicense_Click(object sender, RoutedEventArgs e)

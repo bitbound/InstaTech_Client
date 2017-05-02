@@ -83,24 +83,6 @@ namespace InstaTech_Client
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var ping = new Ping();
-            try
-            {
-                var response = await ping.SendPingAsync("translucency.info", 1000);
-                if (response.Status != IPStatus.Success)
-                {
-                    System.Windows.MessageBox.Show("You don't appear to have an internet connection.  Please check your connection and try again.", "No Internet Connection", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Close();
-                    return;
-                }
-            }
-            catch
-            {
-                System.Windows.MessageBox.Show("You don't appear to have an internet connection.  Please check your connection and try again.", "No Internet Connection", MessageBoxButton.OK, MessageBoxImage.Error);
-                Close();
-                return;
-            }
-
             InitWebSocket();
 
             // Initialize variables requiring screen dimensions.
