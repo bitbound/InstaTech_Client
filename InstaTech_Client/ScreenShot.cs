@@ -28,8 +28,10 @@ namespace InstaTech_Client
 
         public void SaveCroppedFrame(MemoryStream ms)
         {
-            var croppedFrame = _currentFrame.Clone(_boundingBox, PixelFormat.Format32bppArgb);
-            croppedFrame.Save(ms, ImageFormat.Jpeg);
+            using (var croppedFrame = _currentFrame.Clone(_boundingBox, PixelFormat.Format32bppArgb))
+            {
+                croppedFrame.Save(ms, ImageFormat.Jpeg);
+            }
         }
 
         public void CloneLastFrame()
