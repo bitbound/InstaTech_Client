@@ -37,30 +37,25 @@ namespace InstaTech_Client
 
         public byte[] GetNewData()
         {
-            return GetChangedPixels(Screenshot, _lastFrame);
-        }
-
-        private byte[] GetChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
-        {
-            if (bitmap1.Height != bitmap2.Height || bitmap1.Width != bitmap2.Width)
+            if (Screenshot.Height != _lastFrame.Height || Screenshot.Width != _lastFrame.Width)
             {
                 throw new Exception("Bitmaps are not of equal dimensions.");
             }
-            if (!Bitmap.IsAlphaPixelFormat(bitmap1.PixelFormat) || !Bitmap.IsAlphaPixelFormat(bitmap2.PixelFormat) ||
-                !Bitmap.IsCanonicalPixelFormat(bitmap1.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(bitmap2.PixelFormat))
+            if (!Bitmap.IsAlphaPixelFormat(Screenshot.PixelFormat) || !Bitmap.IsAlphaPixelFormat(_lastFrame.PixelFormat) ||
+                !Bitmap.IsCanonicalPixelFormat(Screenshot.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(_lastFrame.PixelFormat))
             {
                 throw new Exception("Bitmaps must be 32 bits per pixel and contain alpha channel.");
             }
-            var width = bitmap1.Width;
-            var height = bitmap1.Height;
+            var width = Screenshot.Width;
+            var height = Screenshot.Height;
             byte[] newImgData;
             int left = int.MaxValue;
             int top = int.MaxValue;
             int right = int.MinValue;
             int bottom = int.MinValue;
 
-            var bd1 = bitmap1.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bitmap1.PixelFormat);
-            var bd2 = bitmap2.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bitmap2.PixelFormat);
+            var bd1 = Screenshot.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, Screenshot.PixelFormat);
+            var bd2 = _lastFrame.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, _lastFrame.PixelFormat);
             // Get the address of the first line.
             IntPtr ptr1 = bd1.Scan0;
             IntPtr ptr2 = bd2.Scan0;
@@ -123,14 +118,14 @@ namespace InstaTech_Client
                 newImgData[5] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(4, 2));
 
                 _boundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
-                bitmap1.UnlockBits(bd1);
-                bitmap2.UnlockBits(bd2);
+                Screenshot.UnlockBits(bd1);
+                _lastFrame.UnlockBits(bd2);
                 return newImgData;
             }
             else
             {
-                bitmap1.UnlockBits(bd1);
-                bitmap2.UnlockBits(bd2);
+                Screenshot.UnlockBits(bd1);
+                _lastFrame.UnlockBits(bd2);
                 return null;
             }
         }
