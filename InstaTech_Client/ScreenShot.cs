@@ -9,10 +9,12 @@ namespace InstaTech_Client
 {
     public class ScreenShot
     {
+        private Bitmap _currentFrame;
         private Bitmap _lastFrame;
         private Rectangle _boundingBox;
 
-        public Bitmap Screenshot { get; private set; }
+        public Bitmap CurrentFrame => _currentFrame;
+
         public int TotalHeight { get; private set; } = 0;
         public int TotalWidth { get; private set; } = 0;
 
@@ -20,48 +22,48 @@ namespace InstaTech_Client
         {
             TotalWidth = SystemInformation.VirtualScreen.Width;
             TotalHeight = SystemInformation.VirtualScreen.Height;
-            Screenshot = new Bitmap(TotalWidth, TotalHeight);
+            _currentFrame = new Bitmap(TotalWidth, TotalHeight);
             _lastFrame = new Bitmap(TotalWidth, TotalHeight);
         }
 
         public void SaveCroppedFrame(MemoryStream ms)
         {
-            var croppedFrame = Screenshot.Clone(_boundingBox, PixelFormat.Format32bppArgb);
+            var croppedFrame = _currentFrame.Clone(_boundingBox, PixelFormat.Format32bppArgb);
             croppedFrame.Save(ms, ImageFormat.Jpeg);
         }
 
         public void CloneLastFrame()
         {
-            _lastFrame = (Bitmap)Screenshot.Clone();
+            _lastFrame = (Bitmap)_currentFrame.Clone();
         }
 
         public byte[] GetNewData()
         {
-            if (Screenshot.Height != _lastFrame.Height || Screenshot.Width != _lastFrame.Width)
+            if (_currentFrame.Height != _lastFrame.Height || _currentFrame.Width != _lastFrame.Width)
             {
                 throw new Exception("Bitmaps are not of equal dimensions.");
             }
-            if (!Bitmap.IsAlphaPixelFormat(Screenshot.PixelFormat) || !Bitmap.IsAlphaPixelFormat(_lastFrame.PixelFormat) ||
-                !Bitmap.IsCanonicalPixelFormat(Screenshot.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(_lastFrame.PixelFormat))
+            if (!Bitmap.IsAlphaPixelFormat(_currentFrame.PixelFormat) || !Bitmap.IsAlphaPixelFormat(_lastFrame.PixelFormat) ||
+                !Bitmap.IsCanonicalPixelFormat(_currentFrame.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(_lastFrame.PixelFormat))
             {
                 throw new Exception("Bitmaps must be 32 bits per pixel and contain alpha channel.");
             }
-            var width = Screenshot.Width;
-            var height = Screenshot.Height;
+            var width = _currentFrame.Width;
+            var height = _currentFrame.Height;
             byte[] newImgData;
             int left = int.MaxValue;
             int top = int.MaxValue;
             int right = int.MinValue;
             int bottom = int.MinValue;
 
-            var bd1 = Screenshot.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, Screenshot.PixelFormat);
+            var bd1 = _currentFrame.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, _currentFrame.PixelFormat);
             var bd2 = _lastFrame.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, _lastFrame.PixelFormat);
             // Get the address of the first line.
             IntPtr ptr1 = bd1.Scan0;
             IntPtr ptr2 = bd2.Scan0;
 
             // Declare an array to hold the bytes of the bitmap.
-            int bytes = Math.Abs(bd1.Stride) * Screenshot.Height;
+            int bytes = Math.Abs(bd1.Stride) * _currentFrame.Height;
             byte[] rgbValues1 = new byte[bytes];
             byte[] rgbValues2 = new byte[bytes];
 
@@ -118,13 +120,13 @@ namespace InstaTech_Client
                 newImgData[5] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(4, 2));
 
                 _boundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
-                Screenshot.UnlockBits(bd1);
+                _currentFrame.UnlockBits(bd1);
                 _lastFrame.UnlockBits(bd2);
                 return newImgData;
             }
             else
             {
-                Screenshot.UnlockBits(bd1);
+                _currentFrame.UnlockBits(bd1);
                 _lastFrame.UnlockBits(bd2);
                 return null;
             }

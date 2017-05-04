@@ -84,7 +84,7 @@ namespace InstaTech_Client
             screenShot.Initialize();
             offsetX = SystemInformation.VirtualScreen.Left;
             offsetY = SystemInformation.VirtualScreen.Top;
-            Graphic = Graphics.FromImage(screenShot.Screenshot);
+            Graphic = Graphics.FromImage(screenShot.CurrentFrame);
 
             // Clean up temp files from previous file transfers.
             var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
@@ -615,7 +615,7 @@ namespace InstaTech_Client
                     await SocketSend(request);
                     using (var ms = new MemoryStream())
                     {
-                        screenShot.Screenshot.Save(ms, ImageFormat.Jpeg);
+                        screenShot.CurrentFrame.Save(ms, ImageFormat.Jpeg);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
