@@ -50,18 +50,13 @@ namespace InstaTech_Client
         const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
 
         // ***  Variables  *** //
+        ScreenShot screenShot = new ScreenShot();
         WebSocket Socket { get; set; }
         HttpClient HttpClient { get; set; } = new HttpClient();
-        Bitmap Screenshot { get; set; }
-        Bitmap LastFrame { get; set; }
-        Bitmap CroppedFrame { get; set; }
         byte[] NewData { get; set; }
-        System.Drawing.Rectangle BoundingBox { get; set; }
         Graphics Graphic { get; set; }
         System.Timers.Timer UacTimer { get; set; } = new System.Timers.Timer(3000);
         bool capturing = false;
-        int totalHeight = 0;
-        int totalWidth = 0;
         // Offsets are the left and top edge of the screen, in case multiple monitor setups
         // create a situation where the edge of a monitor is in the negative.  This must
         // be converted to a 0-based max left/top to render images on the canvas properly.
@@ -86,13 +81,10 @@ namespace InstaTech_Client
             InitWebSocket();
 
             // Initialize variables requiring screen dimensions.
-            totalWidth = SystemInformation.VirtualScreen.Width;
-            totalHeight = SystemInformation.VirtualScreen.Height;
+            screenShot.Initialize();
             offsetX = SystemInformation.VirtualScreen.Left;
             offsetY = SystemInformation.VirtualScreen.Top;
-            Screenshot = new Bitmap(totalWidth, totalHeight);
-            LastFrame = new Bitmap(totalWidth, totalHeight);
-            Graphic = Graphics.FromImage(Screenshot);
+            Graphic = Graphics.FromImage(screenShot.Screenshot);
 
             // Clean up temp files from previous file transfers.
             var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
@@ -429,26 +421,26 @@ namespace InstaTech_Client
                                 ShowToolTip(buttonMenu, "Clipboard data set.", Colors.Green);
                                 break;
                             case "MouseMove":
-                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * totalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * totalHeight) + offsetY);
+                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * screenShot.TotalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * screenShot.TotalHeight) + offsetY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
+                                    User32.SendLeftMouseDown((int)Math.Round(((double)jsonMessage.PointX * screenShot.TotalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * screenShot.TotalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
+                                    User32.SendRightMouseDown((int)Math.Round(((double)jsonMessage.PointX * screenShot.TotalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * screenShot.TotalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 break;
                             case "MouseUp":
                                 if (jsonMessage.Button == "Left")
                                 {
-                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
+                                    User32.SendLeftMouseUp((int)Math.Round(((double)jsonMessage.PointX * screenShot.TotalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * screenShot.TotalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 else if (jsonMessage.Button == "Right")
                                 {
-                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * totalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * totalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
+                                    User32.SendRightMouseUp((int)Math.Round(((double)jsonMessage.PointX * screenShot.TotalWidth + offsetX), 0), (int)Math.Round(((double)jsonMessage.PointY * screenShot.TotalHeight + offsetY), 0), (bool)jsonMessage.Alt, (bool)jsonMessage.Ctrl, (bool)jsonMessage.Shift);
                                 }
                                 break;
                             case "MouseWheel":
@@ -456,7 +448,7 @@ namespace InstaTech_Client
                                 break;
                             case "TouchMove":
                                 User32.GetCursorPos(out cursorPos);
-                                User32.SetCursorPos((int)Math.Round(cursorPos.X + (double)jsonMessage.MoveByX * totalWidth), (int)Math.Round(cursorPos.Y + (double)jsonMessage.MoveByY * totalHeight));
+                                User32.SetCursorPos((int)Math.Round(cursorPos.X + (double)jsonMessage.MoveByX * screenShot.TotalWidth), (int)Math.Round(cursorPos.Y + (double)jsonMessage.MoveByY * screenShot.TotalHeight));
                                 break;
                             case "Tap":
                                 User32.GetCursorPos(out cursorPos);
@@ -587,13 +579,13 @@ namespace InstaTech_Client
                 hWnd = User32.GetDesktopWindow();
                 hDC = User32.GetWindowDC(hWnd);
                 graphDC = Graphic.GetHdc();
-                var copyResult = GDI32.BitBlt(graphDC, 0, 0, totalWidth, totalHeight, hDC, 0 + offsetX, 0 + offsetY, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
+                var copyResult = GDI32.BitBlt(graphDC, 0, 0, screenShot.TotalWidth, screenShot.TotalHeight, hDC, 0 + offsetX, 0 + offsetY, GDI32.TernaryRasterOperations.SRCCOPY | GDI32.TernaryRasterOperations.CAPTUREBLT);
                 if (!copyResult)
                 {
                     Graphic.ReleaseHdc(graphDC);
                     Graphic.Clear(System.Drawing.Color.White);
                     var font = new Font(System.Drawing.FontFamily.GenericSansSerif, 30, System.Drawing.FontStyle.Bold);
-                    Graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((totalWidth / 2), totalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
+                    Graphic.DrawString("Waiting for screen capture...", font, System.Drawing.Brushes.Black, new PointF((screenShot.TotalWidth / 2), screenShot.TotalHeight / 2), new StringFormat() { Alignment = StringAlignment.Center });
                 }
                 else
                 {
@@ -617,13 +609,13 @@ namespace InstaTech_Client
                     var request = new
                     {
                         Type = "Bounds",
-                        Width = totalWidth,
-                        Height = totalHeight
+                        Width = screenShot.TotalWidth,
+                        Height = screenShot.TotalHeight
                     };
                     await SocketSend(request);
                     using (var ms = new MemoryStream())
                     {
-                        Screenshot.Save(ms, ImageFormat.Jpeg);
+                        screenShot.Screenshot.Save(ms, ImageFormat.Jpeg);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
                         ms.WriteByte(0);
@@ -635,7 +627,7 @@ namespace InstaTech_Client
                         return;
                     }
                 }
-                NewData = GetChangedPixels(Screenshot, LastFrame);
+                NewData = screenShot.GetNewData();
                 if (NewData == null)
                 {
                     await Task.Delay(100);
@@ -648,8 +640,7 @@ namespace InstaTech_Client
                 {
                     using (var ms = new MemoryStream())
                     {
-                        CroppedFrame = Screenshot.Clone(BoundingBox, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                        CroppedFrame.Save(ms, ImageFormat.Jpeg);
+                        screenShot.SaveCroppedFrame(ms);
                         // Add x,y coordinates of top-left of image so receiver knows where to draw it.
                         foreach (var metaByte in NewData)
                         {
@@ -658,7 +649,7 @@ namespace InstaTech_Client
                         await Socket.SendAsync(new ArraySegment<byte>(ms.ToArray()), WebSocketMessageType.Binary, true, CancellationToken.None);
                     }
                 }
-                LastFrame = (Bitmap)Screenshot.Clone();
+                screenShot.CloneLastFrame();
             }
             catch (Exception ex)
             {
@@ -677,101 +668,6 @@ namespace InstaTech_Client
                 textAgentStatus.FontWeight = FontWeights.Normal;
                 textAgentStatus.Foreground = new SolidColorBrush(Colors.Black);
                 textAgentStatus.Text = "Not Connected";
-            }
-        }
-
-        private byte[] GetChangedPixels(Bitmap bitmap1, Bitmap bitmap2)
-        {
-            if (bitmap1.Height != bitmap2.Height || bitmap1.Width != bitmap2.Width)
-            {
-                throw new Exception("Bitmaps are not of equal dimensions.");
-            }
-            if (!Bitmap.IsAlphaPixelFormat(bitmap1.PixelFormat) || !Bitmap.IsAlphaPixelFormat(bitmap2.PixelFormat) ||
-                !Bitmap.IsCanonicalPixelFormat(bitmap1.PixelFormat) || !Bitmap.IsCanonicalPixelFormat(bitmap2.PixelFormat))
-            {
-                throw new Exception("Bitmaps must be 32 bits per pixel and contain alpha channel.");
-            }
-            var width = bitmap1.Width;
-            var height = bitmap1.Height;
-            byte[] newImgData;
-            int left = int.MaxValue;
-            int top = int.MaxValue;
-            int right = int.MinValue;
-            int bottom = int.MinValue;
-
-            var bd1 = bitmap1.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bitmap1.PixelFormat);
-            var bd2 = bitmap2.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bitmap2.PixelFormat);
-            // Get the address of the first line.
-            IntPtr ptr1 = bd1.Scan0;
-            IntPtr ptr2 = bd2.Scan0;
-
-            // Declare an array to hold the bytes of the bitmap.
-            int bytes = Math.Abs(bd1.Stride) * Screenshot.Height;
-            byte[] rgbValues1 = new byte[bytes];
-            byte[] rgbValues2 = new byte[bytes];
-
-            // Copy the RGBA values into the array.
-            Marshal.Copy(ptr1, rgbValues1, 0, bytes);
-            Marshal.Copy(ptr2, rgbValues2, 0, bytes);
-
-            // Check RGBA value for each pixel.
-            for (int counter = 0; counter < rgbValues1.Length - 4; counter += 4)
-            {
-                if (rgbValues1[counter] != rgbValues2[counter] ||
-                    rgbValues1[counter + 1] != rgbValues2[counter + 1] ||
-                    rgbValues1[counter + 2] != rgbValues2[counter + 2] ||
-                    rgbValues1[counter + 3] != rgbValues2[counter + 3])
-                {
-                    // Change was found.
-                    var pixel = counter / 4;
-                    var row = (int)Math.Floor((double)pixel / bd1.Width);
-                    var column = pixel % bd1.Width;
-                    if (row < top)
-                    {
-                        top = row;
-                    }
-                    if (row > bottom)
-                    {
-                        bottom = row;
-                    }
-                    if (column < left)
-                    {
-                        left = column;
-                    }
-                    if (column > right)
-                    {
-                        right = column;
-                    }
-                }
-            }
-            if (left < right && top < bottom)
-            {
-                // Bounding box is valid.
-
-                left = Math.Max(left - 20, 0);
-                top = Math.Max(top - 20, 0);
-                right = Math.Min(right + 20, totalWidth);
-                bottom = Math.Min(bottom + 20, totalHeight);
-
-                // Byte array that indicates top left coordinates of the image.
-                newImgData = new byte[6];
-                newImgData[0] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(0, 2));
-                newImgData[1] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(2, 2));
-                newImgData[2] = Byte.Parse(left.ToString().PadLeft(6, '0').Substring(4, 2));
-                newImgData[3] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(0, 2));
-                newImgData[4] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(2, 2));
-                newImgData[5] = Byte.Parse(top.ToString().PadLeft(6, '0').Substring(4, 2));
-
-                BoundingBox = new System.Drawing.Rectangle(left, top, right - left, bottom - top);
-                bitmap1.UnlockBits(bd1);
-                bitmap2.UnlockBits(bd2);
-                return newImgData;
-            }
-            else
-            {
-                bitmap1.UnlockBits(bd1);
-                bitmap2.UnlockBits(bd2);
-                return null;
             }
         }
         private async Task CheckForUpdates(bool Silent)
