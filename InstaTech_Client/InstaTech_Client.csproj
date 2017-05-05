@@ -116,6 +116,7 @@
     <Compile Include="AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ScreenShot.cs" />
     <Compile Include="UnattendedWindow.xaml.cs">
       <DependentUpon>UnattendedWindow.xaml</DependentUpon>
     </Compile>
