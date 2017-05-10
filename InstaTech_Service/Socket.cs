@@ -140,6 +140,7 @@ namespace InstaTech_Service
             heartbeatTimer.Elapsed += async (object send, System.Timers.ElapsedEventArgs args) => {
                 await SendHeartbeat();
             };
+            heartbeatTimer.Start();
             HandleServiceSocket();
         }
 
