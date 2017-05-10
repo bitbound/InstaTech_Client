@@ -159,18 +159,27 @@ namespace InstaTech_Service
             }
             var uptime = new PerformanceCounter("System", "System Up Time", true);
             uptime.NextValue();
-            var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
-            var col = mos.Get();
-            var process = col.Cast<ManagementObject>().First();
-            var ownerInfo = new string[2];
-            process.InvokeMethod("GetOwner", ownerInfo);
+            string currentUser;
+            try
+            {
+                var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
+                var col = mos.Get();
+                var process = col.Cast<ManagementObject>().First();
+                var ownerInfo = new string[2];
+                process.InvokeMethod("GetOwner", ownerInfo);
+                currentUser = ownerInfo[1] + "\\" + ownerInfo[0];
+            }
+            catch
+            {
+                currentUser = "";
+            }
             // Send notification to server that this connection is for a client service.
             var request = new
             {
                 Type = "ConnectionType",
                 ConnectionType = ConnectionType,
                 ComputerName = Environment.MachineName,
-                CurrentUser = ownerInfo[1] + "\\" + ownerInfo[0],
+                CurrentUser = currentUser,
                 LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
             };
             await SocketSend(request);
@@ -791,17 +800,27 @@ namespace InstaTech_Service
                 }
                 var uptime = new PerformanceCounter("System", "System Up Time", true);
                 uptime.NextValue();
-                var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
-                var col = mos.Get();
-                var process = col.Cast<ManagementObject>().First();
-                var ownerInfo = new string[2];
-                process.InvokeMethod("GetOwner", ownerInfo);
+                string currentUser;
+                try
+                {
+                    var mos = new ManagementObjectSearcher("Select * FROM Win32_Process WHERE ExecutablePath LIKE '%explorer.exe%'");
+                    var col = mos.Get();
+                    var process = col.Cast<ManagementObject>().First();
+                    var ownerInfo = new string[2];
+                    process.InvokeMethod("GetOwner", ownerInfo);
+                    currentUser = ownerInfo[1] + "\\" + ownerInfo[0];
+                }
+                catch
+                {
+                    currentUser = "";
+                }
+                
                 // Send notification to server that this connection is for a client service.
                 var request = new
                 {
                     Type = "Heartbeat",
                     ComputerName = Environment.MachineName,
-                    CurrentUser = ownerInfo[1] + "\\" + ownerInfo[0],
+                    CurrentUser = currentUser,
                     LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
                 };
                 await SocketSend(request);
