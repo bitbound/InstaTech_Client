@@ -14,7 +14,7 @@ using System.Security.Principal;
 using System.Net.WebSockets;
 using System.Threading;
 using System.IO;
-using Newtonsoft.Json;
+using JSON_Helper;
 using System.Drawing.Imaging;
 using System.Windows.Media.Animation;
 using System.Net;
@@ -30,7 +30,6 @@ namespace InstaTech_Client
     public partial class MainWindow : Window
     {
         public static MainWindow Current { get; set; }
-        public static DataContractJsonSerializer Serializer { get; } = new DataContractJsonSerializer(typeof(System.Dynamic.DynamicObject));
 
         // ***  Config: Change these variables for your environment.  The preprocessor directive at the top of this file should be Deploy.  *** //
 #if Deploy    
@@ -90,7 +89,7 @@ namespace InstaTech_Client
             Graphic = Graphics.FromImage(screenShot.CurrentFrame);
 
             // Clean up temp files from previous file transfers.
-            var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
+            var di = new DirectoryInfo(Path.GetTempPath() + @"\InstaTech");
             if (di.Exists)
             {
                 di.Delete(true);
@@ -159,7 +158,7 @@ namespace InstaTech_Client
 
         private void textFilesTransferred_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            var di = new DirectoryInfo(System.IO.Path.GetTempPath() + @"\InstaTech");
+            var di = new DirectoryInfo(Path.GetTempPath() + @"\InstaTech");
             if (di.Exists)
             {
                 Process.Start("explorer.exe", di.FullName);
@@ -185,14 +184,14 @@ namespace InstaTech_Client
             }
             try
             {
-                File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
             }
             catch
             {
                 System.Windows.MessageBox.Show("Failed to unpack the service into the temp directory.  Try clearing the temp directory.", "Write Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-install -once");
+            var psi = new ProcessStartInfo(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), "-install -once");
             psi.WindowStyle = ProcessWindowStyle.Hidden;
             Process.Start(psi);
             await SocketSend(new {
@@ -286,8 +285,8 @@ namespace InstaTech_Client
             {
                 try
                 {
-                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
-                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-install");
+                    File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                    var psi = new ProcessStartInfo(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), "-install");
                     psi.WindowStyle = ProcessWindowStyle.Hidden;
                     var proc = Process.Start(psi);
                     Environment.Exit(0);
@@ -301,8 +300,8 @@ namespace InstaTech_Client
             {
                 try
                 {
-                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
-                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
+                    File.WriteAllBytes(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
+                    var psi = new ProcessStartInfo(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
                     psi.WindowStyle = ProcessWindowStyle.Hidden;
                     var proc = Process.Start(psi);
                     Environment.Exit(0);
@@ -361,7 +360,7 @@ namespace InstaTech_Client
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
-                        jsonMessage = JsonConvert.DeserializeObject(trimmedString);
+                        jsonMessage = JSON.Decode(trimmedString);
                         switch ((string)jsonMessage.Type)
                         {
                             case "SessionID":
@@ -379,7 +378,7 @@ namespace InstaTech_Client
                                 }
                                 else
                                 {
-                                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
+                                    var psi = new ProcessStartInfo(Path.Combine(Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
                                     psi.WindowStyle = ProcessWindowStyle.Hidden;
                                     Process.Start(psi);
                                     if (jsonMessage.Status == "timeout")
@@ -404,7 +403,7 @@ namespace InstaTech_Client
                                 HttpResponseMessage httpResult = await HttpClient.GetAsync(url);
                                 var arrResult = await httpResult.Content.ReadAsByteArrayAsync();
                                 string strFileName = jsonMessage.FileName.ToString();
-                                var di = Directory.CreateDirectory(System.IO.Path.GetTempPath() + @"\InstaTech\");
+                                var di = Directory.CreateDirectory(Path.GetTempPath() + @"\InstaTech\");
                                 File.WriteAllBytes(di.FullName + strFileName, arrResult);
                                 textFilesTransferred.Text = di.GetFiles().Length.ToString();
                                 ShowToolTip(textFilesTransferred, "File downloaded.", Colors.Black);
@@ -467,8 +466,8 @@ namespace InstaTech_Client
                                 {
                                     string baseKey = jsonMessage.Key;
                                     string modifier = "";
-                                    var modArray = jsonMessage.Modifiers as Newtonsoft.Json.Linq.JArray;
-                                    if (modArray.Count > 0)
+                                    var modArray = jsonMessage.Modifiers as Array;
+                                    if (modArray.Length > 0)
                                     {
                                         var modList = new List<string>();
                                         foreach (var mod in modArray)
@@ -504,7 +503,7 @@ namespace InstaTech_Client
                                 catch (Exception ex)
                                 {
                                     WriteToLog(ex);
-                                    WriteToLog("Missing keybind for " + JsonConvert.SerializeObject(jsonMessage));
+                                    WriteToLog("Missing keybind for " + JSON.Encode(jsonMessage));
                                 }
                                 break;
                             case "PartnerClose":
@@ -675,7 +674,7 @@ namespace InstaTech_Client
         {
             WebClient webClient = new WebClient();
             HttpClient httpClient = new HttpClient();
-            var strFilePath = System.IO.Path.GetTempPath() + System.IO.Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var strFilePath = Path.GetTempPath() + Path.GetFileName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HttpResponseMessage response;
             if (File.Exists(strFilePath))
             {
@@ -717,7 +716,7 @@ namespace InstaTech_Client
         }
         private async Task SocketSend(dynamic JsonRequest)
         {
-            var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
+            var jsonRequest = JSON.Encode(JsonRequest);
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             await Socket.SendAsync(outBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
@@ -749,7 +748,7 @@ namespace InstaTech_Client
         public static void WriteToLog(Exception ex)
         {
             var exception = ex;
-            var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
+            var path = Path.GetTempPath() + "InstaTech_Client_Logs.txt";
             if (File.Exists(path))
             {
                 var fi = new FileInfo(path);
@@ -770,13 +769,13 @@ namespace InstaTech_Client
                     Source = exception?.Source,
                     StackTrace = exception?.StackTrace,
                 };
-                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
+                File.AppendAllText(path, JSON.Encode(jsonError) + Environment.NewLine);
                 exception = exception.InnerException;
             }
         }
         public static void WriteToLog(string Message)
         {
-            var path = System.IO.Path.GetTempPath() + "InstaTech_Client_Logs.txt";
+            var path = Path.GetTempPath() + "InstaTech_Client_Logs.txt";
             if (File.Exists(path))
             {
                 var fi = new FileInfo(path);
@@ -793,8 +792,7 @@ namespace InstaTech_Client
                 Timestamp = DateTime.Now.ToString(),
                 Message = Message
             };
-            File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
+            File.AppendAllText(path, JSON.Encode(jsoninfo) + Environment.NewLine);
         }
-
     }
 }

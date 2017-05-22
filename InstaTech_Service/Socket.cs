@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Threading;
-using Newtonsoft.Json;
+using JSON_Helper;
 using Win32_Classes;
 using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
@@ -206,7 +206,7 @@ namespace InstaTech_Service
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
-                        jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
+                        jsonMessage = JSON.Decode(trimmedString);
                         
                         switch ((string)jsonMessage.Type)
                         {
@@ -306,8 +306,8 @@ namespace InstaTech_Service
                                 {
                                     string baseKey = jsonMessage.Key;
                                     string modifier = "";
-                                    var modArray = jsonMessage.Modifiers as Newtonsoft.Json.Linq.JArray;
-                                    if (modArray.Count > 0)
+                                    var modArray = jsonMessage.Modifiers as Array;
+                                    if (modArray.Length > 0)
                                     {
                                         var modList = new List<string>();
                                         foreach (var mod in modArray)
@@ -343,7 +343,7 @@ namespace InstaTech_Service
                                 catch (Exception ex)
                                 {
                                     WriteToLog(ex);
-                                    WriteToLog("Missing keybind for " + JsonConvert.SerializeObject(jsonMessage));
+                                    WriteToLog("Missing keybind for " + JSON.Encode(jsonMessage));
                                 }
                                 break;
                             case "CtrlAltDel":
@@ -422,7 +422,7 @@ namespace InstaTech_Service
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
-                        jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
+                        jsonMessage = JSON.Decode(trimmedString);
 
                         switch ((string)jsonMessage.Type)
                         {
@@ -949,7 +949,7 @@ namespace InstaTech_Service
         }
         static private async Task SocketSend(dynamic JsonRequest)
         {
-            var jsonRequest = JsonConvert.SerializeObject(JsonRequest);
+            var jsonRequest = JSON.Encode(JsonRequest);
             var outBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(jsonRequest));
             socketSendBuffer.Add(outBuffer);
             if (socketSendBuffer.Count > 1)
@@ -1033,7 +1033,7 @@ namespace InstaTech_Service
                         fi = new FileInfo(path);
                     }
                 }
-                File.AppendAllText(path, JsonConvert.SerializeObject(jsonError) + Environment.NewLine);
+                File.AppendAllText(path, JSON.Encode(jsonError) + Environment.NewLine);
                 exception = exception.InnerException;
             }
         }
@@ -1057,7 +1057,7 @@ namespace InstaTech_Service
                     fi = new FileInfo(path);
                 }
             }
-            File.AppendAllText(path, JsonConvert.SerializeObject(jsoninfo) + Environment.NewLine);
+            File.AppendAllText(path, JSON.Encode(jsoninfo) + Environment.NewLine);
         }
     }
 }
