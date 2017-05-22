@@ -312,21 +312,6 @@ namespace InstaTech_Client
                     Environment.Exit(1);
                 }
             }
-            else if (args.Exists(arg => arg.Trim().ToLower() == "-update"))
-            {
-                try
-                {
-                    File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), Properties.Resources.InstaTech_Service);
-                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-update");
-                    psi.WindowStyle = ProcessWindowStyle.Hidden;
-                    var proc = Process.Start(psi);
-                    Environment.Exit(0);
-                }
-                catch
-                {
-                    Environment.Exit(1);
-                }
-            }
             else if (args.Count > 1 && File.Exists(args[1]))
             {
                 var startTime = DateTime.Now;
