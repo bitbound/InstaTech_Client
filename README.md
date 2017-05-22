@@ -20,9 +20,8 @@ The WPF version is a small, portable EXE for Windows.  It contains the Windows S
 A self-installing Windows service that will listen for connections and launch the client in the logged-on user's session.  This is embedded in the WPF client.
 
 **Switches**
-   * -install = Installs the service and begins accepting connections.
+   * -install = Installs (or updates) the service and begins accepting connections.
    * -uninstall = Uninstalls the service.
-   * -update = Updates the installed service to this version.
 
 ### Cross-Platform Client (/InstaTech_CP/)
 **Compatibility:** Windows, Linux, and Mac.
