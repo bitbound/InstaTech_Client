@@ -306,21 +306,28 @@ namespace InstaTech_Service
                                 {
                                     string baseKey = jsonMessage.Key;
                                     string modifier = "";
-                                    if (jsonMessage.Modifers != null)
+                                    var modArray = jsonMessage.Modifiers as Newtonsoft.Json.Linq.JArray;
+                                    if (modArray.Count > 0)
                                     {
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Alt"))
+                                        var modList = new List<string>();
+                                        foreach (var mod in modArray)
+                                        {
+                                            modList.Add(mod.ToString());
+                                        }
+                                        if (modList.Contains("Alt"))
                                         {
                                             modifier += "%";
                                         }
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Control"))
+                                        if (modList.Contains("Control"))
                                         {
                                             modifier += "^";
                                         }
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Shift"))
+                                        if (modList.Contains("Shift"))
                                         {
                                             modifier += "+";
                                         }
                                     }
+
                                     if (baseKey.Length > 1)
                                     {
                                         baseKey = baseKey.Replace("Arrow", "");
@@ -336,7 +343,7 @@ namespace InstaTech_Service
                                 catch (Exception ex)
                                 {
                                     WriteToLog(ex);
-                                    WriteToLog("Missing keybind for " + jsonMessage.Key);
+                                    WriteToLog("Missing keybind for " + JsonConvert.SerializeObject(jsonMessage));
                                 }
                                 break;
                             case "CtrlAltDel":

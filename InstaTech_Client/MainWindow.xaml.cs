@@ -22,12 +22,15 @@ using System.Net.Http;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Win32_Classes;
+using System.Web.Script.Serialization;
+using System.Runtime.Serialization.Json;
 
 namespace InstaTech_Client
 {
     public partial class MainWindow : Window
     {
         public static MainWindow Current { get; set; }
+        public static DataContractJsonSerializer Serializer { get; } = new DataContractJsonSerializer(typeof(System.Dynamic.DynamicObject));
 
         // ***  Config: Change these variables for your environment.  The preprocessor directive at the top of this file should be Deploy.  *** //
 #if Deploy    
@@ -373,8 +376,7 @@ namespace InstaTech_Client
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
-                        jsonMessage = JsonConvert.DeserializeObject<dynamic>(trimmedString);
-
+                        jsonMessage = JsonConvert.DeserializeObject(trimmedString);
                         switch ((string)jsonMessage.Type)
                         {
                             case "SessionID":
@@ -386,18 +388,25 @@ namespace InstaTech_Client
                                 BeginScreenCapture();
                                 break;
                             case "ConnectUpgrade":
-                                if (jsonMessage.Status == "timeout")
-                                {
-                                    System.Windows.MessageBox.Show("The upgrade request timed out.", "Upgrade Timeout", MessageBoxButton.OK, MessageBoxImage.Warning);
-                                }
-                                else if (jsonMessage.Status == "nopartner")
-                                {
-                                    System.Windows.MessageBox.Show("You must have a partner connected before you can upgrade to a service.", "Partner Required", MessageBoxButton.OK, MessageBoxImage.Warning);
-                                }
-                                else if (jsonMessage.Status == "ok")
+                                if (jsonMessage.Status == "ok")
                                 {
                                     App.Current.Shutdown();
                                 }
+                                else
+                                {
+                                    var psi = new ProcessStartInfo(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "InstaTech_Service.exe"), "-uninstall");
+                                    psi.WindowStyle = ProcessWindowStyle.Hidden;
+                                    Process.Start(psi);
+                                    if (jsonMessage.Status == "timeout")
+                                    {
+                                        System.Windows.MessageBox.Show("The upgrade request timed out.", "Upgrade Timeout", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                    }
+                                    else if (jsonMessage.Status == "nopartner")
+                                    {
+                                        System.Windows.MessageBox.Show("You must have a partner connected before you can upgrade to a service.", "Partner Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                    }
+                                }
+                                
                                 break;
                             case "RefreshScreen":
                                 sendFullScreenshot = true;
@@ -473,21 +482,28 @@ namespace InstaTech_Client
                                 {
                                     string baseKey = jsonMessage.Key;
                                     string modifier = "";
-                                    if (jsonMessage.Modifers != null)
+                                    var modArray = jsonMessage.Modifiers as Newtonsoft.Json.Linq.JArray;
+                                    if (modArray.Count > 0)
                                     {
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Alt"))
+                                        var modList = new List<string>();
+                                        foreach (var mod in modArray)
+                                        {
+                                            modList.Add(mod.ToString());
+                                        }
+                                        if (modList.Contains("Alt"))
                                         {
                                             modifier += "%";
                                         }
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Control"))
+                                        if (modList.Contains("Control"))
                                         {
                                             modifier += "^";
                                         }
-                                        if ((jsonMessage.Modifiers as string[]).Contains("Shift"))
+                                        if (modList.Contains("Shift"))
                                         {
                                             modifier += "+";
                                         }
                                     }
+              
                                     if (baseKey.Length > 1)
                                     {
                                         baseKey = baseKey.Replace("Arrow", "");
@@ -503,7 +519,7 @@ namespace InstaTech_Client
                                 catch (Exception ex)
                                 {
                                     WriteToLog(ex);
-                                    WriteToLog("Missing keybind for " + jsonMessage.Key);
+                                    WriteToLog("Missing keybind for " + JsonConvert.SerializeObject(jsonMessage));
                                 }
                                 break;
                             case "PartnerClose":
