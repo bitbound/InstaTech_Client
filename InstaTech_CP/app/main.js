@@ -5,7 +5,8 @@ global.hostName = "";
 global.debug = false;
 
 // A service URL that will respond to a GET request with the current version.
-var versionUrl;
+var versionUrl = "";
+
 if (process.platform == "linux")
 {
     versionURL = "https://" + global.hostName + "/Services/Get_Linux_Client_Version.cshtml";
@@ -16,7 +17,6 @@ var downloadURLMac = "";
 var downloadURLLinux = "https://" + global.hostName + "/Downloads/InstaTech_CP.AppImage";
 
 const electron = require('electron');
-
 const app = electron.app;
 const os = require("os");
 const fs = require("fs");
