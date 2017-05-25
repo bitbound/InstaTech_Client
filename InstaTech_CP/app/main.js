@@ -66,7 +66,7 @@ function checkForUpdates() {
     // Check for updates.
     https.get(versionURL, function (res) {
         res.on("data", function (ver) {
-            if (ver != electron.app.getVersion()) {
+            if (ver != electron.app.getVersion() && ver != "0.0.0.0") {
                 electron.dialog.showMessageBox({
                     type: "question",
                     title: "Update Available",
@@ -88,8 +88,8 @@ function checkForUpdates() {
                                 downloadURL = "";
                         }
                         var fileName = downloadURL.split("/")[downloadURL.split("/").length - 1];
-                        if (fs.existsSync(os.tmpdir() + "\\" + fileName)) {
-                            fs.unlinkSync(os.tmpdir() + "\\" + fileName);
+                        if (fs.existsSync(os.tmpdir() + "/" + fileName)) {
+                            fs.unlinkSync(os.tmpdir() + "/" + fileName);
                         };
                         var downloadWin = new electron.BrowserWindow({
                             width: 300,
@@ -101,11 +101,11 @@ function checkForUpdates() {
                         downloadWin.setMenuBarVisibility(false);
                         downloadWin.loadURL(`file://${__dirname}/downloading.html`);
                         https.get(downloadURL, function (result) {
-                            var stream = fs.createWriteStream(os.tmpdir() + "\\" + fileName);
+                            var stream = fs.createWriteStream(os.tmpdir() + "/" + fileName);
                             result.pipe(stream);
                             stream.on("finish", function () {
                                 stream.close();
-                                electron.shell.openExternal(os.tmpdir() + "\\" + fileName);
+                                electron.shell.openExternal(os.tmpdir() + "/" + fileName);
                                 electron.app.exit(0);
                             });
                         });
@@ -131,8 +131,8 @@ function deleteFolderRecursive(path) {
 
 function cleanupTempFiles() {
     // Remove previous session's temp files (if any).
-    if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
-        deleteFolderRecursive(os.tmpdir() + "\\InstaTech\\");
+    if (fs.existsSync(os.tmpdir() + "/InstaTech/")) {
+        deleteFolderRecursive(os.tmpdir() + "/InstaTech/");
     };
 }
 app.on('window-all-closed', () => {

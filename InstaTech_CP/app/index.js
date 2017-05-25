@@ -105,6 +105,8 @@ function openWebSocket() {
     };
     socket.onerror = function (e) {
         capturing = false;
+        $("#inputAgentStatus").val("Not Connected");
+        $("#inputAgentStatus").css("color", "black");
         $("#sectionMain").hide();
         $("#sectionNewSession").show();
         console.log(e);
@@ -126,8 +128,9 @@ function openWebSocket() {
                 getCapture();
                 break;
             case "FileTransfer":
-                if (!fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
-                    fs.mkdirSync(os.tmpdir() + "\\InstaTech\\");
+                var fs = require("fs");
+                if (!fs.existsSync(os.tmpdir() + "/InstaTech/")) {
+                    fs.mkdirSync(os.tmpdir() + "/InstaTech/");
                 };
                 var retrievalCode = jsonMessage.RetrievalCode;
                 var request = {
@@ -135,8 +138,8 @@ function openWebSocket() {
                     "RetrievalCode": retrievalCode
                 };
                 $.post(ftPath, JSON.stringify(request), function (data) {
-                    fs.writeFileSync(os.tmpdir() + "\\InstaTech\\" + jsonMessage.FileName, buf.Buffer.from(data, "base64"));
-                    $("#inputFilesTransferred").val(fs.readdirSync(os.tmpdir() + "\\InstaTech\\").length);
+                    fs.writeFileSync(os.tmpdir() + "/InstaTech/" + jsonMessage.FileName, buf.Buffer.from(data, "base64"));
+                    $("#inputFilesTransferred").val(fs.readdirSync(os.tmpdir() + "/InstaTech/").length);
                     showTooltip($("#inputFilesTransferred"), "left", "black", "File downloaded.");
                 });
                 break;
@@ -212,6 +215,15 @@ function openWebSocket() {
                     robot.keyToggle("shift", "up");
                 }
                 break;
+            case "MouseWheel":
+                var dir;
+                if (jsonMessage.DeltaY < 0) {
+                    dir = "up";
+                }
+                else if (jsonMessage.DeltaY > 0) {
+                    dir = "down";
+                }
+                robot.scrollMouse(1, dir);
             case "TouchMove":
                 var mousePos = robot.getMousePos();
                 robot.moveMouse(Math.round(jsonMessage.MoveByX * totalWidth + mousePos.x), Math.round(jsonMessage.MoveByY * totalWidth + mousePos.y));
@@ -233,13 +245,16 @@ function openWebSocket() {
                     var baseKey = jsonMessage.Key.toLowerCase();
                     if (baseKey.startsWith("{"))
                     {
-                        baseKey = baseKey.slice(0);
+                        baseKey = baseKey.slice(1, baseKey.length);
                     }
                     if (baseKey.endsWith("}"))
                     {
-                        baseKey = baseKey.slice(0), baseKey.length - 1;
+                        baseKey = baseKey.slice(0, baseKey.length - 1);
                     }
                     var modifiers = jsonMessage.Modifiers;
+                    for (var i = 0; i < modifiers.length; i++) {
+                        modifiers[i] = modifiers[i].toLowerCase();
+                    }
 
                     // Rename base key for RobotJS syntax.
                     if (baseKey.length > 1) {
@@ -295,9 +310,7 @@ function reconnect() {
     openWebSocket();
 }
 function disconnectAgent() {
-    if (socket.readyState == WebSocket.OPEN) {
         socket.close();
-    }
 }
 function dataURItoBlob(dataURI) {
     var arrURI = dataURI.split(",");
@@ -317,9 +330,9 @@ function dataURItoBlob(dataURI) {
     return blob;
 }
 function openTransferredFiles() {
-    var strPath = os.tmpdir() + "\\InstaTech\\";
-    if (fs.existsSync(os.tmpdir() + "\\InstaTech\\")) {
-        electron.shell.openItem(os.tmpdir() + "\\InstaTech\\");
+    var strPath = os.tmpdir() + "/InstaTech/";
+    if (fs.existsSync(os.tmpdir() + "/InstaTech/")) {
+        electron.shell.openItem(os.tmpdir() + "/InstaTech/");
     }
     else {
         showTooltip($("#inputFilesTransferred"), "left", "black", "No files available.");
