@@ -29,17 +29,14 @@ namespace InstaTech_Service
         const string hostName = "test.instatech.org";
 #elif DEBUG
         const string hostName = "localhost:52422";
-#elif !DEBUG
+#else
         const string hostName = "demo.instatech.org";
 #endif
-#if DEBUG && !Test
-        const string socketPath = "ws://" + hostName + "/Services/Remote_Control_Socket.cshtml";
-#else
-        const string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
-#endif
-        const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
-        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Service.exe";
-        const string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
+
+        static string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
+        static string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
+        static string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Service.exe";
+        static string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
         // ***  Variables  *** //
         static WebSocket socket;
@@ -143,10 +140,33 @@ namespace InstaTech_Service
             heartbeatTimer.Start();
             HandleServiceSocket();
         }
-
+        private static async Task TestSSL()
+        {
+            socketPath = socketPath.Replace("ws:", "wss:");
+            downloadURI = downloadURI.Replace("http:", "https:");
+            fileTransferURI = fileTransferURI.Replace("http:", "https:");
+            versionURI = versionURI.Replace("http:", "https:");
+            try
+            {
+                var request = WebRequest.CreateHttp("https://" + hostName);
+                var response = await request.GetResponseAsync() as HttpWebResponse;
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                WriteToLog("SSL check failed. Connection is not encrypted.");
+                socketPath = socketPath.Replace("wss", "ws");
+                downloadURI = downloadURI.Replace("https", "http");
+                fileTransferURI = fileTransferURI.Replace("https", "http");
+                versionURI = versionURI.Replace("https", "http");
+            }
+        }
         private static async Task InitWebSocket()
         {
-
+            await TestSSL();
             socket = SystemClientWebSocket.CreateClientWebSocket();
             try
             {
@@ -207,12 +227,12 @@ namespace InstaTech_Service
                     {
                         trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
                         jsonMessage = JSON.Decode(trimmedString);
-                        
+
                         switch ((string)jsonMessage.Type)
                         {
                             case "CaptureScreen":
                                 var thisProc = System.Diagnostics.Process.GetCurrentProcess();
-                                var allProcs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service").Where(proc=>proc.SessionId == Process.GetCurrentProcess().SessionId);
+                                var allProcs = System.Diagnostics.Process.GetProcessesByName("InstaTech_Service").Where(proc => proc.SessionId == Process.GetCurrentProcess().SessionId);
                                 foreach (var proc in allProcs)
                                 {
                                     if (proc.Id != thisProc.Id)

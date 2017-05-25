@@ -21,6 +21,7 @@ const app = electron.app;
 const os = require("os");
 const fs = require("fs");
 const https = require("https");
+const http = require("http");
 
 // Prevent window from being garbage collected.
 let mainWindow;
@@ -54,6 +55,14 @@ function createMainWindow() {
 	return win;
 }
 function checkForUpdates() {
+    try {
+        https.get("https://" + hostName);
+    }
+    catch (ex) {
+        versionUrl = versionUrl.replace("https", "http");
+        downloadURLLinux = downloadURLLinux.replace("https", "http");
+        downloadURLMac = downloadURLMac.replace("https", "http");
+    }
     // Check for updates.
     https.get(versionURL, function (res) {
         res.on("data", function (ver) {

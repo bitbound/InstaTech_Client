@@ -26,6 +26,8 @@ var hostName = require("electron").remote.getGlobal("hostName");
 var wsPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
 // File transfer service path.
 var ftPath = "https://" + hostName + "/Services/File_Transfer.cshtml";
+// Remote control path.
+var rcPath = "https://" + hostName + "/Remote_Control/";
 
 const robot = require("robotjs");
 const electron = require('electron');
@@ -56,7 +58,37 @@ var offsetX = 0;
 var offsetY = 0;
 
 function openWebSocket() {
-    socket = new WebSocket(wsPath);
+    try {
+        socket = new WebSocket(wsPath);
+    }
+    catch (ex) {
+        wsPath = wsPath.replace("wss:", "ws:");
+        ftPath = ftPath.replace("https:", "http:");
+        rcPath = rcPath.replace("https:", "http:");
+        try {
+            socket = new WebSocket(wsPath);
+            electron.remote.dialog.showMessageBox({
+                type: "question",
+                title: "Connection Not Secure",
+                message: "A secure connection couldn't be established.  SSL is not configured properly on the server.  Do you want to proceed with an unencrypted connection?",
+                buttons: ["Yes", "No"],
+                defaultId: 0,
+                cancelId: 1
+            }, function (selection) {
+                if (selection == 1) {
+                    electron.remote.app.exit(0);
+                }
+            })
+        }
+        catch (e) {
+            electron.remote.dialog.showMessageBox({
+                type: "error",
+                title: "Connection Failed",
+                message: "Unable to connect to server."
+            })
+            return;
+        }
+    }
     socket.onopen = function (e) {
         var request = {
             "Type": "ConnectionType",
@@ -508,8 +540,8 @@ function StringToArrBuff(strData) {
     }
     return buff;
 }
-function openViewer(){
-    electron.shell.openExternal("https://" + global.hostName + "/Remote_Control");
+function openViewer() {
+    electron.shell.openExternal(rcPath);
 }
 function openAbout() {
     var about = new electron.remote.BrowserWindow({

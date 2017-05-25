@@ -38,18 +38,15 @@ namespace InstaTech_Client
         const string hostName = "test.instatech.org";
 #elif DEBUG
         const string hostName = "localhost:52422";
-#elif !DEBUG
+#else
         const string hostName = "demo.instatech.org";
 #endif
-#if DEBUG && !Test
-        const string socketPath = "ws://" + hostName + "/Services/Remote_Control_Socket.cshtml";
-#else
-        const string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
-#endif
 
-        const string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
-        const string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Client.exe";
-        const string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
+        string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
+        string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
+        string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Client.exe";
+        string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
+        string rcPath = "https://" + hostName + "/Remote_Control/";
 
         // ***  Variables  *** //
         ScreenShot screenShot = new ScreenShot();
@@ -201,7 +198,7 @@ namespace InstaTech_Client
         }
         private void menuViewer_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://" + hostName + "/Remote_Control");
+            Process.Start(rcPath);
         }
         private void menuUnattended_Click(object sender, RoutedEventArgs e)
         {
@@ -246,9 +243,31 @@ namespace InstaTech_Client
             tt.IsOpen = false;
             tt = null;
         }
-
+        private async Task TestSSL()
+        {
+            try
+            {
+                var request = WebRequest.CreateHttp("https://" + hostName);
+                var response = await request.GetResponseAsync() as HttpWebResponse;
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                WriteToLog("SSL check failed. Connection is not encrypted.");
+                socketPath = socketPath.Replace("wss", "ws");
+                downloadURI = downloadURI.Replace("https", "http");
+                fileTransferURI = fileTransferURI.Replace("https", "http");
+                versionURI = versionURI.Replace("https", "http");
+                rcPath = rcPath.Replace("https", "http");
+            }
+            
+        }
         private async void InitWebSocket()
         {
+            await TestSSL();
             try
             {
                 Socket = SystemClientWebSocket.CreateClientWebSocket();
@@ -268,6 +287,15 @@ namespace InstaTech_Client
                 WriteToLog(ex);
                 System.Windows.MessageBox.Show("Unable to connect to server.", "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
+            }
+            if (socketPath.StartsWith("ws://"))
+            {
+                var result = System.Windows.MessageBox.Show("A secure connection couldn't be established.  SSL is not configured properly on the server.  Do you want to proceed with an unencrypted connection?", "Connection Not Secure", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result == MessageBoxResult.No)
+                {
+                    App.Current.Shutdown();
+                    return;
+                }
             }
             // Send notification to server that this connection is for a client app.
             var request = new
