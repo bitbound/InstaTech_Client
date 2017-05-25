@@ -17,8 +17,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron ./app",
-    "build": "build",
-    "rebuild": "npm rebuild --runtime=electron --target=1.6.0 --disturl=https://atom.io/download/atom-shell --abi=48"
+    "build": "build"
   },
   "files": [
     "main.js",
@@ -41,10 +40,10 @@
   "build": {
     "appId": "InstaTech CP",
     "win": {
-      "icon": "build/icon.ico"
+      "icon": "app/build/icon.ico"
     },
     "nsis": {
-      "installerIcon": "build/icon.ico"
+      "installerIcon": "app/build/icon.ico"
     }
   }
 }

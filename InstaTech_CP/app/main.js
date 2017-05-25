@@ -1,8 +1,8 @@
 // ***  Config: Change these variables for your environment.  *** //
-global.hostName = "";
+global.hostName = "test.instatech.org";
 
 // Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this.)
-global.debug = false;
+global.debug = true;
 
 // A service URL that will respond to a GET request with the current version.
 var versionUrl = "";
@@ -11,10 +11,17 @@ if (process.platform == "linux")
 {
     versionURL = "https://" + global.hostName + "/Services/Get_Linux_Client_Version.cshtml";
 }
+else if (process.platform == "darwin") {
+    versionURL = "https://" + global.hostName + "/Services/Get_Mac_Client_Version.cshtml";
+}
+else if (process.platform == "win32") {
+    versionURL = "https://" + global.hostName + "/Services/Get_Win_CP_Client_Version.cshtml";
+}
 
 // The URLs of the application's current version per OS.
-var downloadURLMac = "";
+var downloadURLMac = "https://" + global.hostName + "/Downloads/InstaTech_CP.dmg";
 var downloadURLLinux = "https://" + global.hostName + "/Downloads/InstaTech_CP.AppImage";
+var downloadURLWin = "https://" + global.hostName + "/Downloads/InstaTech_CP.exe";
 
 const electron = require('electron');
 const app = electron.app;
@@ -63,6 +70,10 @@ function checkForUpdates() {
         downloadURLLinux = downloadURLLinux.replace("https", "http");
         downloadURLMac = downloadURLMac.replace("https", "http");
     }
+    // Version couldn't be identified.
+    if (!versionUrl) {
+        return;
+    }
     // Check for updates.
     https.get(versionURL, function (res) {
         res.on("data", function (ver) {
@@ -84,6 +95,8 @@ function checkForUpdates() {
                             case "darwin":
                                 downloadURL = downloadURLMac;
                                 break;
+                            case "win32":
+                                downloadURL = downloadURLWin;
                             default:
                                 downloadURL = "";
                         }
