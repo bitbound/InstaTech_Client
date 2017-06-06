@@ -36,6 +36,7 @@
                 </Button>
                 <StackPanel x:Name="stackMain"  HorizontalAlignment="Stretch" VerticalAlignment="Top">
                     <TextBlock Text="InstaTech" FontWeight="Bold" FontSize="25" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"></TextBlock>
+                    <TextBlock Text="Services by InstaTech" FontStyle="Italic" VerticalAlignment="Top" HorizontalAlignment="Left"></TextBlock>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,10,0,0">
                         <TextBlock Text="Session ID:" FontSize="15"></TextBlock>
                         <TextBox x:Name="textSessionID" HorizontalAlignment="Right" FontSize="15" Foreground="Gray" Text="Retreiving..." TextAlignment="Center" IsReadOnly="True" Width="100" Margin="10,0,0,0" PreviewMouseLeftButtonUp="textSessionID_PreviewMouseLeftButtonUp" Cursor="Hand" ToolTip="Click to copy the session ID into the clipboard."></TextBox>
