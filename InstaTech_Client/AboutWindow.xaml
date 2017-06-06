@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:InstaTech_Client"
         mc:Ignorable="d"
-        Title="About InstaTech" Height="325" Width="400"  WindowStartupLocation="CenterOwner" Icon="Assets/InstaTech.png" WindowStyle="None">
+        Title="About InstaTech" Height="325" Width="400"  WindowStartupLocation="CenterOwner" Icon="Assets/InstaTech.ico" WindowStyle="None">
     <Grid>
         <Grid HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" Text="About InstaTech" Margin="5,0,0,0"></TextBlock>

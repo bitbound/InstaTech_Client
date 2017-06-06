@@ -33,7 +33,7 @@
         </Grid>
 
         <StackPanel x:Name="stackContent" Grid.Column="1" Width="240" Margin="15,0,0,0" VerticalAlignment="Center">
-            <TextBlock FontSize="16" FontWeight="Bold" Margin="0,0,0,10">InstaTech</TextBlock>
+            <TextBlock Text="InstaTech" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"></TextBlock>
             <TextBlock TextWrapping="NoWrap">Your screen is being viewed by a technician.</TextBlock>
         </StackPanel>
     </Grid>
