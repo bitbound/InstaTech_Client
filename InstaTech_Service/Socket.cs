@@ -32,6 +32,8 @@ namespace InstaTech_Service
 #else
         const string hostName = "demo.instatech.org";
 #endif
+        static string wsPort = "80";
+        static string wssPort = "443";
 
         static string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
         static string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
@@ -158,6 +160,10 @@ namespace InstaTech_Service
             catch
             {
                 WriteToLog("SSL check failed. Connection is not encrypted.");
+                if (wsPort != "80")
+                {
+                    socketPath = "ws://" + hostName + ":" + wsPort + "/Services/Remote_Control_Socket.cshtml";
+                }
                 socketPath = socketPath.Replace("wss", "ws");
                 downloadURI = downloadURI.Replace("https", "http");
                 fileTransferURI = fileTransferURI.Replace("https", "http");
@@ -166,6 +172,10 @@ namespace InstaTech_Service
         }
         private static async Task InitWebSocket()
         {
+            if (wssPort != "443")
+            {
+                socketPath = "wss://" + hostName + ":" + wssPort + "/Services/Remote_Control_Socket.cshtml";
+            }
             await TestSSL();
             socket = SystemClientWebSocket.CreateClientWebSocket();
             try
@@ -174,9 +184,22 @@ namespace InstaTech_Service
             }
             catch
             {
-                await Task.Delay(600000);
-                await InitWebSocket();
-                return;
+                try
+                {
+                    if (wsPort != "80")
+                    {
+                        socketPath = "ws://" + hostName + ":" + wsPort + "/Services/Remote_Control_Socket.cshtml";
+                    }
+                    socket = SystemClientWebSocket.CreateClientWebSocket();
+                    await socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    WriteToLog(ex);
+                    await Task.Delay(600000);
+                    await InitWebSocket();
+                    return;
+                }
             }
             var uptime = new PerformanceCounter("System", "System Up Time", true);
             uptime.NextValue();

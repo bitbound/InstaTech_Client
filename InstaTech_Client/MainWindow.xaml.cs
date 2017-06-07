@@ -41,6 +41,8 @@ namespace InstaTech_Client
 #else
         const string hostName = "demo.instatech.org";
 #endif
+        string wsPort = "80";
+        string wssPort = "443";
 
         string socketPath = "wss://" + hostName + "/Services/Remote_Control_Socket.cshtml";
         string fileTransferURI = "https://" + hostName + "/Services/File_Transfer.cshtml";
@@ -48,7 +50,7 @@ namespace InstaTech_Client
         string versionURI = "https://" + hostName + "/Services/Get_Win_Client_Version.cshtml";
         string rcPath = "https://" + hostName + "/Remote_Control/";
 
-        // ***  Variables  *** //
+        // ***  Properties/Fields  *** //
         ScreenShot screenShot = new ScreenShot();
         WebSocket Socket { get; set; }
         HttpClient HttpClient { get; set; } = new HttpClient();
@@ -257,6 +259,10 @@ namespace InstaTech_Client
             catch
             {
                 WriteToLog("SSL check failed. Connection is not encrypted.");
+                if (wsPort != "80")
+                {
+                    socketPath = "ws://" + hostName + ":" + wsPort + "/Services/Remote_Control_Socket.cshtml";
+                }
                 socketPath = socketPath.Replace("wss", "ws");
                 downloadURI = downloadURI.Replace("https", "http");
                 fileTransferURI = fileTransferURI.Replace("https", "http");
@@ -267,6 +273,10 @@ namespace InstaTech_Client
         }
         private async void InitWebSocket()
         {
+            if (wssPort != "443")
+            {
+                socketPath = "wss://" + hostName + ":" + wssPort + "/Services/Remote_Control_Socket.cshtml";
+            }
             await TestSSL();
             try
             {
@@ -282,11 +292,23 @@ namespace InstaTech_Client
             {
                 await Socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
             }
-            catch (Exception ex)
+            catch
             {
-                WriteToLog(ex);
-                System.Windows.MessageBox.Show("Unable to connect to server.", "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                try
+                {
+                    if (wsPort != "80")
+                    {
+                        socketPath = "ws://" + hostName + ":" + wsPort + "/Services/Remote_Control_Socket.cshtml";
+                    }
+                    Socket = SystemClientWebSocket.CreateClientWebSocket();
+                    await Socket.ConnectAsync(new Uri(socketPath), CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    WriteToLog(ex);
+                    System.Windows.MessageBox.Show("Unable to connect to server.", "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
             if (socketPath.StartsWith("ws://"))
             {
