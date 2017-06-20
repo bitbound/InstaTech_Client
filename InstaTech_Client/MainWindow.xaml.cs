@@ -1,4 +1,4 @@
-﻿#define Test
+#define Test
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -112,7 +112,7 @@ namespace InstaTech_Client
             //    content.Add(new StringContent("DoNotReply@translucency.info"), "email");
             //    var errors = WebUtility.HtmlEncode(File.ReadAllText(System.IO.Path.GetTempPath() + "InstaTech_Client_Errors.txt"));
             //    content.Add(new StringContent(errors), "message");
-            //    var httpResponse = httpClient.PostAsync("https://translucency.info/Services/SendEmail.cshtml", content);
+            //    var httpResponse = httpClient.PostAsync("https://translucency.azurewebsites.net/Services/SendEmail.cshtml", content);
             //    httpResponse.Wait();
             //    if (httpResponse.Result.IsSuccessStatusCode)
             //    {

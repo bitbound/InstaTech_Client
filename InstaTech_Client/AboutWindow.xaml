@@ -1,4 +1,4 @@
-﻿<Window x:Class="InstaTech_Client.AboutWindow"
+<Window x:Class="InstaTech_Client.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -28,7 +28,7 @@
             </TextBlock>
                 <TextBlock Margin="0, 0, 0, 10" >
                 <TextBlock>Website: </TextBlock>
-                <Hyperlink x:Name="hyperInstaTechWebsite" Click="hyperInstaTechWebsite_Click">https://instatech.org</Hyperlink>
+                <Hyperlink x:Name="hyperInstaTechWebsite" Click="hyperInstaTechWebsite_Click">https://instatech.azurewebsites.net</Hyperlink>
             </TextBlock>
                 <TextBox Height="120" Margin="0, 0, 0, 5" TextWrapping="Wrap" Text="InstaTech is a free and open source remote control application.  It requires an InstaTech server to broker connections.  Please visit the website for more information.&#x0a;&#x0a;InstaTech uses the following third party packages:&#x0a;&#x0a;Fody (https://github.com/Fody/Fody)&#x0a;&#x0a;Costura.Fody (https://github.com/Fody/Costura)&#x0a;&#x0a;System.Net.WebSockets.Client.Managed (https://github.com/PingmanTools/System.Net.WebSockets.Client.Managed)" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
                 <Grid>
@@ -40,7 +40,7 @@
             </StackPanel>
             <TextBlock FontSize="10" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5">
                 <TextBlock>Created by Translucency (</TextBlock>
-                <Hyperlink x:Name="hyperWebsite" Click="hyperWebsite_Click">https://translucency.info</Hyperlink>
+                <Hyperlink x:Name="hyperWebsite" Click="hyperWebsite_Click">https://translucency.azurewebsites.net</Hyperlink>
                 <TextBlock>)</TextBlock>
             </TextBlock>
         </Grid>

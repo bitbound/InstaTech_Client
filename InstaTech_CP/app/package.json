@@ -6,10 +6,10 @@
   "license": "Custom",
   "author": {
     "name": "Translucency",
-    "email": "jared@translucency.info",
-    "url": "https://translucency.info"
+    "email": "translucency@outlook.com",
+    "url": "https://translucency.azurewebsites.net"
   },
-  "homepage": "https://instatech.org",
+  "homepage": "https://instatech.azurewebsites.net",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
