@@ -62,7 +62,7 @@ namespace InstaTech_Service
         static bool sendFullScreenshot = true;
         static DateTime lastMessage = DateTime.Now;
         static System.Timers.Timer idleTimer = new System.Timers.Timer(5000);
-        static System.Timers.Timer heartbeatTimer = new System.Timers.Timer(3600000);
+        static System.Timers.Timer heartbeatTimer = new System.Timers.Timer(300000);
         static Process deployProc;
         static Process psProcess;
         static Process cmdProcess;
@@ -847,7 +847,6 @@ namespace InstaTech_Service
                 if (socket.State != WebSocketState.Open)
                 {
                     await InitWebSocket();
-                    return;
                 }
                 var uptime = new PerformanceCounter("System", "System Up Time", true);
                 uptime.NextValue();
