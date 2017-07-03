@@ -26,7 +26,7 @@ namespace InstaTech_Service
 #if Deploy    
         const string hostName = "";
 #elif Test
-        const string hostName = "test.instatech.org";
+        const string hostName = "instatech-test.azurewebsites.net";
 #elif DEBUG
         const string hostName = "localhost:52422";
 #else
@@ -844,6 +844,7 @@ namespace InstaTech_Service
         {
             try
             {
+                WriteToLog("Heartbeat started send.");
                 if (socket.State != WebSocketState.Open)
                 {
                     await InitWebSocket();
@@ -874,6 +875,7 @@ namespace InstaTech_Service
                     LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
                 };
                 await SocketSend(request);
+                WriteToLog("Heartbeat finished send.");
                 var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\");
                 foreach (var file in di.GetFiles())
                 {
