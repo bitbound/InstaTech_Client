@@ -40,7 +40,7 @@ namespace InstaTech_Service
         static string downloadURI = "https://" + hostName + "/Downloads/InstaTech_Service.exe";
         static string versionURI = "https://" + hostName + "/Services/Get_Service_Version.cshtml";
 
-        // ***  Variables  *** //
+        // ***  Fields and Properties  *** //
         static WebSocket socket;
         static HttpClient httpClient = new HttpClient();
         static Bitmap screenshot;
@@ -122,7 +122,7 @@ namespace InstaTech_Service
             await InitWebSocket();
             await HandleInteractiveSocket();
         }
-        public static async void StartService()
+        public static async Task StartService()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             
@@ -140,7 +140,7 @@ namespace InstaTech_Service
                 await SendHeartbeat();
             };
             heartbeatTimer.Start();
-            HandleServiceSocket();
+            await HandleServiceSocket();
         }
         private static async Task TestSSL()
         {
@@ -450,7 +450,7 @@ namespace InstaTech_Service
             }
         }
 
-        private async static void HandleServiceSocket()
+        private async static Task HandleServiceSocket()
         {
             try
             {
@@ -660,7 +660,7 @@ namespace InstaTech_Service
                                     {
                                         psProcess.CancelOutputRead();
                                         psProcess.CancelErrorRead();
-                                        psProcess.Close();
+                                        psProcess.Kill();
                                     }
                                     psProcess = null;
                                 }
@@ -670,7 +670,7 @@ namespace InstaTech_Service
                                     {
                                         cmdProcess.CancelOutputRead();
                                         cmdProcess.CancelErrorRead();
-                                        cmdProcess.Close();
+                                        cmdProcess.Kill();
                                     }
                                     cmdProcess = null;
                                 }
@@ -844,7 +844,6 @@ namespace InstaTech_Service
         {
             try
             {
-                WriteToLog("Heartbeat started send.");
                 if (socket.State != WebSocketState.Open)
                 {
                     await InitWebSocket();
@@ -875,7 +874,6 @@ namespace InstaTech_Service
                     LastReboot = (DateTime.Now - TimeSpan.FromSeconds(uptime.NextValue()))
                 };
                 await SocketSend(request);
-                WriteToLog("Heartbeat finished send.");
                 var di = Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments) + @"\InstaTech\");
                 foreach (var file in di.GetFiles())
                 {

@@ -153,12 +153,16 @@ namespace InstaTech_Service
             }
             else
             {
+#if DEBUG
+                Socket.StartService().Wait();
+#else
                 ServiceBase[] ServicesToRun;
                 ServicesToRun = new ServiceBase[]
                 {
                 new Service1()
                 };
                 ServiceBase.Run(ServicesToRun);
+#endif
             }
         }
     }
