@@ -1,4 +1,4 @@
-#define Test
+#define DEBUG
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,11 +35,11 @@ namespace InstaTech_Client
 #if Deploy    
         const string hostName = "";
 #elif Test
-        const string hostName = "test.instatech.org";
+        const string hostName = "instatech-test.azurewebsites.net";
 #elif DEBUG
         const string hostName = "localhost:52422";
 #else
-        const string hostName = "demo.instatech.org";
+        const string hostName = "instatech-demo.azurewebsites.net";
 #endif
         string wsPort = "80";
         string wssPort = "443";
@@ -319,6 +319,7 @@ namespace InstaTech_Client
                     return;
                 }
             }
+            WriteToLog($"Connection opened on {socketPath}.");
             // Send notification to server that this connection is for a client app.
             var request = new
             {

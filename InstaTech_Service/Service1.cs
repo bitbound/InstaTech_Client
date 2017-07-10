@@ -27,7 +27,9 @@ namespace InstaTech_Service
         protected override void OnStart(string[] args)
         {
             base.OnStart(args);
-            Socket.StartService().Wait();
+#pragma warning disable
+            Socket.StartService();
+#pragma warning restore
         }
         protected override void OnStop()
         {

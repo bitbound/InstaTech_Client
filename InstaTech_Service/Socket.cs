@@ -30,7 +30,7 @@ namespace InstaTech_Service
 #elif DEBUG
         const string hostName = "localhost:52422";
 #else
-        const string hostName = "demo.instatech.org";
+        const string hostName = "instatech-demo.azurewebsites.net";
 #endif
         static string wsPort = "80";
         static string wssPort = "443";
@@ -217,6 +217,7 @@ namespace InstaTech_Service
             {
                 currentUser = "";
             }
+            WriteToLog($"Connection opened on {socketPath}.");
             // Send notification to server that this connection is for a client service.
             var request = new
             {
@@ -587,7 +588,7 @@ namespace InstaTech_Service
                                         psProcess = new Process();
                                         psProcess.StartInfo = psi2;
                                         psProcess.EnableRaisingEvents = true;
-
+                                        
                                         psProcess.OutputDataReceived += async (object sender, DataReceivedEventArgs args) =>
                                         {
                                             jsonMessage.Status = "ok";
