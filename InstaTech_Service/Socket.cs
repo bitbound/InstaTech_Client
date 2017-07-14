@@ -196,7 +196,7 @@ namespace InstaTech_Service
                 catch (Exception ex)
                 {
                     WriteToLog(ex);
-                    await Task.Delay(600000);
+                    await Task.Delay(60000);
                     await InitWebSocket();
                     return;
                 }
@@ -236,12 +236,12 @@ namespace InstaTech_Service
         }
         static private async Task HandleInteractiveSocket()
         {
+            ArraySegment<byte> buffer;
+            WebSocketReceiveResult result;
+            string trimmedString = "";
+            dynamic jsonMessage = null;
             try
             {
-                ArraySegment<byte> buffer;
-                WebSocketReceiveResult result;
-                string trimmedString = "";
-                dynamic jsonMessage = null;
                 while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
@@ -435,30 +435,30 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                if (ConnectionType == "ClientConsoleOnce")
-                {
-                    foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
-                    {
-                        if (proc.Id != Process.GetCurrentProcess().Id)
-                        {
-                            proc.Kill();
-                        }
-                    }
-                    Process.Start("cmd", "/c sc delete InstaTech_Service");
-                }
                 WriteToLog(ex);
-                Environment.Exit(1);
             }
+            if (ConnectionType == "ClientConsoleOnce")
+            {
+                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                {
+                    if (proc.Id != Process.GetCurrentProcess().Id)
+                    {
+                        proc.Kill();
+                    }
+                }
+                Process.Start("cmd", "/c sc delete InstaTech_Service");
+            }
+            Environment.Exit(0);
         }
 
         private async static Task HandleServiceSocket()
         {
+            ArraySegment<byte> buffer;
+            WebSocketReceiveResult result;
+            string trimmedString = "";
+            dynamic jsonMessage = null;
             try
             {
-                ArraySegment<byte> buffer;
-                WebSocketReceiveResult result;
-                string trimmedString = "";
-                dynamic jsonMessage = null;
                 while (socket.State == WebSocketState.Connecting || socket.State == WebSocketState.Open)
                 {
                     buffer = ClientWebSocket.CreateClientBuffer(65536, 65536);
@@ -588,7 +588,7 @@ namespace InstaTech_Service
                                         psProcess = new Process();
                                         psProcess.StartInfo = psi2;
                                         psProcess.EnableRaisingEvents = true;
-                                        
+
                                         psProcess.OutputDataReceived += async (object sender, DataReceivedEventArgs args) =>
                                         {
                                             jsonMessage.Status = "ok";
@@ -652,7 +652,7 @@ namespace InstaTech_Service
                                 {
                                     return;
                                 }
-                                
+
                                 break;
                             case "NewConsole":
                                 if (jsonMessage.Language.ToString() == "PowerShell")
@@ -686,21 +686,24 @@ namespace InstaTech_Service
             }
             catch (Exception ex)
             {
-                if (ConnectionType == "ClientServiceOnce")
-                {
-                    foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
-                    {
-                        if (proc.Id != Process.GetCurrentProcess().Id)
-                        {
-                            proc.Kill();
-                        }
-                    }
-                    Process.Start("cmd", "/c sc delete InstaTech_Service");
-                    Environment.Exit(1);
-                }
                 WriteToLog(ex);
-                Environment.Exit(1);
+                //Environment.Exit(0);
             }
+            if (ConnectionType == "ClientServiceOnce")
+            {
+                foreach (var proc in Process.GetProcessesByName("InstaTech_Service"))
+                {
+                    if (proc.Id != Process.GetCurrentProcess().Id)
+                    {
+                        proc.Kill();
+                    }
+                }
+                Process.Start("cmd", "/c sc delete InstaTech_Service");
+                Environment.Exit(0);
+            }
+            await Task.Delay(60000);
+            await InitWebSocket();
+            await HandleServiceSocket();
         }
 
         // Remove trailing empty bytes in the buffer.
