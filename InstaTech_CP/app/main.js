@@ -1,5 +1,5 @@
 // ***  Config: Change these variables for your environment.  *** //
-global.hostName = "instatech-test.azurewebsites.net";
+global.hostName = "";
 
 // Set to true to enable dev tools for debugging. (Note: Server target is also set in index.js based on this.)
 global.debug = true;

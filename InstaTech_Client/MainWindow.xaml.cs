@@ -32,14 +32,10 @@ namespace InstaTech_Client
         public static MainWindow Current { get; set; }
 
         // ***  Config: Change these variables for your environment.  The preprocessor directive at the top of this file should be Deploy.  *** //
-#if Deploy    
+#if !DEBUG
         const string hostName = "";
-#elif Test
-        const string hostName = "instatech-test.azurewebsites.net";
-#elif DEBUG
-        const string hostName = "localhost:52422";
 #else
-        const string hostName = "instatech-demo.azurewebsites.net";
+        const string hostName = "localhost:52422";
 #endif
         string wsPort = "80";
         string wssPort = "443";

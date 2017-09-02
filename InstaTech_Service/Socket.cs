@@ -1,5 +1,4 @@
-﻿#define Test
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -23,14 +22,10 @@ namespace InstaTech_Service
     public static class Socket
     {
         // ***  Config: Change these variables for your environment.  *** //
-#if Deploy    
+#if !DEBUG
         const string hostName = "";
-#elif Test
-        const string hostName = "instatech-test.azurewebsites.net";
-#elif DEBUG
-        const string hostName = "localhost:52422";
 #else
-        const string hostName = "instatech-demo.azurewebsites.net";
+        const string hostName = "localhost:52422";
 #endif
         static string wsPort = "80";
         static string wssPort = "443";
