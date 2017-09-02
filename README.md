@@ -38,12 +38,8 @@ The WPF client and cross-platform client, when launched, will generate a random 
 
 Computers that have the Windows service will show up in the Unattended mode and the Computer Hub of the InstaTech Server.
 
-The remote control tool is currently located at https://demo.instatech.org/Remote_Control.
-
 ### Building
-There's an automated package builder available at https://instatech.azurewebsites.net/Downloads.  It will recompile the client applications so they target your hostname, rebuild the ASP.NET site with your company name on it, and put them in an installer.
-
-Alternatively, you can change the hostname properties yourself prior to building.  Check the comments in /InstaTech_Client/MainWindow.xaml.cs, /InstaTech_Service/Socket.cs, and /InstaTech_CP/app/main.js.
+To customize the clients, change the hostname properties prior to building.  Check the comments in /InstaTech_Client/MainWindow.xaml.cs, /InstaTech_Service/Socket.cs, and /InstaTech_CP/app/main.js.
 
 ### 3rd-Party Libraries
 The InstaTech project uses the below 3rd-party libraries.  A huge thank you to the creators for these!  They are all awesome, and I highly encourage you to check them out.
