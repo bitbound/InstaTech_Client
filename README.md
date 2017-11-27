@@ -3,7 +3,7 @@
 A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server.
 
 Server Repo: https://github.com/Jay-Rad/InstaTech_Server  
-Website: https://instatech.invis.me
+Website: http://instatech.invis.me
 
 ### WPF Client + Windows Service (/InstaTech_Client/)
 **Compatibility:** Windows 7, 8, and 10.
