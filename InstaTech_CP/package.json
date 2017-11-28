@@ -7,13 +7,13 @@
   "author": {
     "name": "Translucency",
     "email": "translucency@outlook.com",
-    "url": "https://translucency.azurewebsites.net"
+    "url": "http://invis.me"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/Jay-Rad/InstaTech_Client.git"
   },
-  "homepage": "https://instatech.azurewebsites.net",
+  "homepage": "http://instatech.invis.me",
   "main": "main.js",
   "scripts": {
     "start": "electron ./app",

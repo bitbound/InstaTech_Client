@@ -22,10 +22,10 @@ namespace InstaTech_Service
     public static class Socket
     {
         // ***  Config: Change these variables for your environment.  *** //
-#if !DEBUG
-        const string hostName = "";
-#else
+#if DEBUG
         const string hostName = "localhost:52422";
+#else
+        const string hostName = "";
 #endif
         static string wsPort = "80";
         static string wssPort = "443";

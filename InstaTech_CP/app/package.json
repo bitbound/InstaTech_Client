@@ -7,9 +7,9 @@
   "author": {
     "name": "Translucency",
     "email": "translucency@outlook.com",
-    "url": "https://translucency.azurewebsites.net"
+    "url": "http://invis.me"
   },
-  "homepage": "https://instatech.azurewebsites.net",
+  "homepage": "http://instatech.invis.me",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

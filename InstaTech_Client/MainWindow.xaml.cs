@@ -30,11 +30,11 @@ namespace InstaTech_Client
     {
         public static MainWindow Current { get; set; }
 
-        // ***  Config: Change these variables for your environment.  The preprocessor directive at the top of this file should be Deploy.  *** //
-#if !DEBUG
-        const string hostName = "";
-#else
+        // ***  Config: Change these variables for your environment.  *** //
+#if DEBUG
         const string hostName = "localhost:52422";
+#else
+        const string hostName = "";
 #endif
         string wsPort = "80";
         string wssPort = "443";
@@ -95,33 +95,6 @@ namespace InstaTech_Client
             e.Handled = true;
             WriteToLog(e.Exception);
             System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  If the issue persists, please contact the developer.", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            // *** Example of additional error handling. *** //
-            //var result = System.Windows.MessageBox.Show("There was an error from which InstaTech couldn't recover.  Can we submit this error to the developer?  No personal information will be sent.", "Application Error", MessageBoxButton.YesNo, MessageBoxImage.Error);
-            //if (result == MessageBoxResult.Yes)
-            //{
-            //    var httpClient = new HttpClient();
-            //    var content = new MultipartFormDataContent();
-            //    content.Add(new StringContent("InstaTech Client"), "app");
-            //    content.Add(new StringContent("InstaTech User"), "name");
-            //    content.Add(new StringContent("InstaTech User"), "from");
-            //    content.Add(new StringContent("DoNotReply@translucency.info"), "email");
-            //    var errors = WebUtility.HtmlEncode(File.ReadAllText(System.IO.Path.GetTempPath() + "InstaTech_Client_Errors.txt"));
-            //    content.Add(new StringContent(errors), "message");
-            //    var httpResponse = httpClient.PostAsync("https://translucency.azurewebsites.net/Services/SendEmail.cshtml", content);
-            //    httpResponse.Wait();
-            //    if (httpResponse.Result.IsSuccessStatusCode)
-            //    {
-            //        System.Windows.MessageBox.Show("Thank you for helping me improve this app!", "Upload Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            //    }
-            //    else
-            //    {
-            //        System.Windows.MessageBox.Show("The file upload failed.  Please send me an email if it persists.", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Information);
-            //    }
-            //}
-            //else
-            //{
-            //    System.Windows.MessageBox.Show("Okay.  No information will be sent.", "Upload Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
-            //}
         }
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
