@@ -183,9 +183,7 @@
     <Resource Include="Assets\T %28About%29.png" />
     <None Include="FodyWeavers.xml" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="packages\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Resource Include="Assets\InstaTech.ico" />
   </ItemGroup>
