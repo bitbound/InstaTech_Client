@@ -378,7 +378,7 @@ namespace InstaTech_Client
                     result = await Socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(buffer.Take(result.Count).ToArray());
                         jsonMessage = JSON.Decode(trimmedString);
                         switch ((string)jsonMessage.Type)
                         {
@@ -557,26 +557,7 @@ namespace InstaTech_Client
                 textAgentStatus.Text = "Not Connected";
             }
         }
-        // Remove trailing empty bytes in the buffer.
-        private byte[] TrimBytes(byte[] bytes)
-        {
-            // Loop backwards through array until the first non-zero byte is found.
-            var firstZero = 0;
-            for (int i = bytes.Length - 1; i >= 0; i--)
-            {
-                if (bytes[i] != 0)
-                {
-                    firstZero = i + 1;
-                    break;
-                }
-            }
-            if (firstZero == 0)
-            {
-                throw new Exception("Byte array is empty.");
-            }
-            // Return non-empty bytes.
-            return bytes.Take(firstZero).ToArray();
-        }
+
         private async void BeginScreenCapture()
         {
             capturing = true;

@@ -64,13 +64,17 @@ namespace InstaTech_Service
         static dynamic deployFileRequest;
         static List<ArraySegment<Byte>> socketSendBuffer = new List<ArraySegment<byte>>();
         static string desktopName;
+        static DateTime LastPingReceived { get; set; } = DateTime.Now;
 
 
         public static async Task StartInteractive()
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             var notifierPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Notifier.exe");
-            Process.Start(notifierPath);
+            if (File.Exists(notifierPath))
+            {
+                Process.Start(notifierPath);
+            }
             //Initialize variables requiring screen dimensions.
             totalWidth = SystemInformation.VirtualScreen.Width;
             totalHeight = SystemInformation.VirtualScreen.Height;
@@ -244,7 +248,7 @@ namespace InstaTech_Service
                     lastMessage = DateTime.Now;
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(buffer.Take(result.Count).ToArray());
                         jsonMessage = JSON.Decode(trimmedString);
 
                         switch ((string)jsonMessage.Type)
@@ -256,7 +260,12 @@ namespace InstaTech_Service
                                 {
                                     if (proc.Id != thisProc.Id)
                                     {
-                                        proc.Kill();
+                                        try
+                                        {
+                                            proc.Close();
+                                            proc.Kill();
+                                        }
+                                        catch { }
                                     }
                                 }
                                 if (!ConnectionType.Contains("Once"))
@@ -401,7 +410,12 @@ namespace InstaTech_Service
                                     {
                                         if (proc.Id != Process.GetCurrentProcess().Id)
                                         {
-                                            proc.Kill();
+                                            try
+                                            {
+                                                proc.Close();
+                                                proc.Kill();
+                                            }
+                                            catch { }
                                         }
                                     }
                                     Process.Start("cmd", "/c sc delete InstaTech_Service");
@@ -415,7 +429,12 @@ namespace InstaTech_Service
                                     {
                                         if (proc.Id != Process.GetCurrentProcess().Id)
                                         {
-                                            proc.Kill();
+                                            try
+                                            {
+                                                proc.Close();
+                                                proc.Kill();
+                                            }
+                                            catch { }
                                         }
                                     }
                                     Process.Start("cmd", "/c sc delete InstaTech_Service");
@@ -438,7 +457,12 @@ namespace InstaTech_Service
                 {
                     if (proc.Id != Process.GetCurrentProcess().Id)
                     {
-                        proc.Kill();
+                        try
+                        {
+                            proc.Close();
+                            proc.Kill();
+                        }
+                        catch { }
                     }
                 }
                 Process.Start("cmd", "/c sc delete InstaTech_Service");
@@ -460,7 +484,7 @@ namespace InstaTech_Service
                     result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        trimmedString = Encoding.UTF8.GetString(TrimBytes(buffer.Array));
+                        trimmedString = Encoding.UTF8.GetString(buffer.Take(result.Count).ToArray());
                         jsonMessage = JSON.Decode(trimmedString);
 
                         switch ((string)jsonMessage.Type)
@@ -470,7 +494,12 @@ namespace InstaTech_Service
                                 {
                                     if (proc.SessionId != Process.GetCurrentProcess().SessionId)
                                     {
-                                        proc.Kill();
+                                        try
+                                        {
+                                            proc.Close();
+                                            proc.Kill();
+                                        }
+                                        catch { }                                    
                                     }
                                 }
                                 desktopName = User32.GetCurrentDesktop();
@@ -501,7 +530,12 @@ namespace InstaTech_Service
                                 {
                                     if (proc.SessionId != Process.GetCurrentProcess().SessionId)
                                     {
-                                        proc.Kill();
+                                        try
+                                        {
+                                            proc.Close();
+                                            proc.Kill();
+                                        }
+                                        catch { }
                                     }
                                 }
                                 var pi = new ADVAPI32.PROCESS_INFORMATION();
@@ -527,12 +561,20 @@ namespace InstaTech_Service
                                 File.WriteAllBytes(di.FullName + strFileName, arrResult);
                                 var ext = Path.GetExtension(strFileName).ToLower();
                                 ProcessStartInfo psi;
-                                if (ext == ".bat" || ext == ".exe")
+                                if (ext == ".exe")
                                 {
                                     psi = new ProcessStartInfo(di.FullName + strFileName);
                                     if (!String.IsNullOrWhiteSpace((string)jsonMessage.Arguments))
                                     {
                                         psi.Arguments = jsonMessage.Arguments;
+                                    }
+                                }
+                                else if (ext == ".bat")
+                                {
+                                    psi = new ProcessStartInfo("cmd.exe", "/c \"" + di.FullName + strFileName + "\"");
+                                    if (!String.IsNullOrWhiteSpace((string)jsonMessage.Arguments))
+                                    {
+                                        psi.Arguments += " " + jsonMessage.Arguments;
                                     }
                                 }
                                 else if (ext == ".ps1")
@@ -551,22 +593,20 @@ namespace InstaTech_Service
                                     return;
                                 }
                                 psi.RedirectStandardOutput = true;
+                                psi.RedirectStandardError = true;
                                 psi.UseShellExecute = false;
                                 deployProc = new Process();
                                 deployProc.StartInfo = psi;
                                 deployProc.EnableRaisingEvents = true;
-                                deployProc.OutputDataReceived += (object sender, DataReceivedEventArgs args) =>
-                                {
-                                    deployFileRequest.Output += args.Data + Environment.NewLine;
-                                };
                                 deployProc.Exited += async (object sender, EventArgs e) =>
                                 {
+                                    deployFileRequest.Output = deployProc.StandardOutput.ReadToEnd();
+                                    deployFileRequest.Error = deployProc.StandardError.ReadToEnd();
                                     deployFileRequest.Status = "ok";
                                     deployFileRequest.ExitCode = deployProc.ExitCode;
                                     await SocketSend(deployFileRequest);
                                 };
                                 deployProc.Start();
-                                deployProc.BeginOutputReadLine();
                                 break;
                             case "ConsoleCommand":
                                 string command = Encoding.UTF8.GetString(Convert.FromBase64String(jsonMessage.Command.ToString()));
@@ -673,6 +713,9 @@ namespace InstaTech_Service
                                 jsonMessage.Status = "ok";
                                 await SocketSend(jsonMessage);
                                 break;
+                            case "Ping":
+                                LastPingReceived = DateTime.Now;
+                                break;
                             default:
                                 break;
                         }
@@ -690,7 +733,12 @@ namespace InstaTech_Service
                 {
                     if (proc.Id != Process.GetCurrentProcess().Id)
                     {
-                        proc.Kill();
+                        try
+                        {
+                            proc.Close();
+                            proc.Kill();
+                        }
+                        catch { }
                     }
                 }
                 Process.Start("cmd", "/c sc delete InstaTech_Service");
@@ -701,26 +749,6 @@ namespace InstaTech_Service
             await HandleServiceSocket();
         }
 
-        // Remove trailing empty bytes in the buffer.
-        static public byte[] TrimBytes(byte[] bytes)
-        {
-            // Loop backwards through array until the first non-zero byte is found.
-            var firstZero = 0;
-            for (int i = bytes.Length - 1; i >= 0; i--)
-            {
-                if (bytes[i] != 0)
-                {
-                    firstZero = i + 1;
-                    break;
-                }
-            }
-            if (firstZero == 0)
-            {
-                throw new Exception("Byte array is empty.");
-            }
-            // Return non-empty bytes.
-            return bytes.Take(firstZero).ToArray();
-        }
         static private void BeginScreenCapture()
         {
             capturing = true;
@@ -843,6 +871,10 @@ namespace InstaTech_Service
         {
             try
             {
+                if (DateTime.Now - LastPingReceived > TimeSpan.FromMinutes(1))
+                {
+                    await InitWebSocket();
+                }
                 if (socket.State != WebSocketState.Open)
                 {
                     await InitWebSocket();
