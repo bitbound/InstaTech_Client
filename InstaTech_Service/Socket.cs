@@ -25,7 +25,7 @@ namespace InstaTech_Service
 #if DEBUG
         const string hostName = "localhost:52422";
 #else
-        const string hostName = "";
+        const string hostName = "translucency.myddns.rocks";
 #endif
         static string wsPort = "80";
         static string wssPort = "443";
@@ -195,8 +195,7 @@ namespace InstaTech_Service
                 catch (Exception ex)
                 {
                     WriteToLog(ex);
-                    await Task.Delay(60000);
-                    await InitWebSocket();
+                    Environment.Exit(1);
                     return;
                 }
             }
@@ -302,7 +301,7 @@ namespace InstaTech_Service
                                 User32.CloseClipboard();
                                 break;
                             case "MouseMove":
-                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * totalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * totalHeight) + offsetY);
+                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")
@@ -742,11 +741,8 @@ namespace InstaTech_Service
                     }
                 }
                 Process.Start("cmd", "/c sc delete InstaTech_Service");
-                Environment.Exit(0);
             }
-            await Task.Delay(60000);
-            await InitWebSocket();
-            await HandleServiceSocket();
+            Environment.Exit(0);
         }
 
         static private void BeginScreenCapture()
@@ -871,13 +867,9 @@ namespace InstaTech_Service
         {
             try
             {
-                if (DateTime.Now - LastPingReceived > TimeSpan.FromMinutes(1))
+                if (DateTime.Now - LastPingReceived > TimeSpan.FromMinutes(1) || socket.State != WebSocketState.Open)
                 {
-                    await InitWebSocket();
-                }
-                if (socket.State != WebSocketState.Open)
-                {
-                    await InitWebSocket();
+                    Environment.Exit(1);
                 }
                 var uptime = new PerformanceCounter("System", "System Up Time", true);
                 uptime.NextValue();

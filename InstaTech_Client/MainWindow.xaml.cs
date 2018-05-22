@@ -433,7 +433,7 @@ namespace InstaTech_Client
                                 ShowToolTip(buttonMenu, "Clipboard data set.", Colors.Green);
                                 break;
                             case "MouseMove":
-                                User32.SetCursorPos((int)Math.Round((double)jsonMessage.PointX * screenShot.TotalWidth) + offsetX, (int)Math.Round((double)jsonMessage.PointY * screenShot.TotalHeight) + offsetY);
+                                User32.SendMouseMove((double)jsonMessage.PointX, (double)jsonMessage.PointY);
                                 break;
                             case "MouseDown":
                                 if (jsonMessage.Button == "Left")

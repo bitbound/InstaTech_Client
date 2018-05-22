@@ -1377,14 +1377,14 @@ namespace Win32_Classes
 
         // Offsets are used in case there's a multi-monitor setup where the left-most or top-most edge of the virtual screen
         // is not 0.  The coordinates sent from the web viewer are always zero-based, so the offset must be applied.
-        public static uint SendMouseMove(int x, int y, int screenWidth, int screenHeight, int offsetX, int offsetY)
+        public static uint SendMouseMove(double x, double y)
         {
             // Coordinates must be normalized.  The bottom-right coordinate is mapped to 65535.
-            var normalizedX = (int)Math.Round((double)(65535 / screenWidth) * (x + offsetX));
-            var normalizedY = (int)Math.Round((double)(65535 / screenHeight) * (y + offsetY));
-            var union = new User32.InputUnion() { mi = new User32.MOUSEINPUT() { dwFlags = User32.MOUSEEVENTF.ABSOLUTE | User32.MOUSEEVENTF.MOVE, dx = normalizedX, dy = normalizedY, time = 0, mouseData = 0, dwExtraInfo = (UIntPtr)User32.GetMessageExtraInfo() } };
-            var input = new User32.INPUT() { type = User32.InputType.MOUSE, U = union };
-            return User32.SendInput(1, new User32.INPUT[] { input }, User32.INPUT.Size);
+            var normalizedX = x * (double)65535;
+            var normalizedY = y * (double)65535;
+            var union = new InputUnion() { mi = new MOUSEINPUT() { dwFlags = MOUSEEVENTF.ABSOLUTE | MOUSEEVENTF.MOVE | MOUSEEVENTF.VIRTUALDESK, dx = (int)normalizedX, dy = (int)normalizedY, time = 0, mouseData = 0, dwExtraInfo = (UIntPtr)GetMessageExtraInfo() } };
+            var input = new INPUT() { type = InputType.MOUSE, U = union };
+            return SendInput(1, new INPUT[] { input }, INPUT.Size);
         }
 
         // In this overload, x is percentage of distance from left compared to total screen width, and y is top compared to height.
