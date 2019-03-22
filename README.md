@@ -1,5 +1,7 @@
 # InstaTech Client
 
+## InstaTech has been discontinued.  Please see the new project, Remotely, at https://github.com/jay-rad/remotely.
+
 A screen sharing client (WPF and cross-platform) that runs on its accompanying ASP.NET server.
 
 Server Repo: https://github.com/Jay-Rad/InstaTech_Server  
